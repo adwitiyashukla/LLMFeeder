@@ -24,10 +24,14 @@ UNSUPPORTED    0.14  The company announced a quarterly dividend of 12 cents per 
                      no supporting span found
 
 9 claims  6 supported  0 partial  1 unsupported  2 contradicted
-faithfulness 0.73  (lexical judge, 1 sources)
+faithfulness 0.73  (lexical judge, 1 source)
 ```
 
-Add `--report out.html` and you get a page where clicking any claim highlights the exact sentence it rests on, inside the rendered source. [See a real one.](docs/example-report.html)
+Add `--report out.html` and you get a page where clicking any claim highlights the exact sentence it rests on, inside the rendered source.
+
+### [Open the live example report](https://adwitiyashukla.github.io/footnote/example-report.html)
+
+Click any claim on the left. The exact characters it rests on light up in the source on the right. Nothing to install.
 
 ---
 
