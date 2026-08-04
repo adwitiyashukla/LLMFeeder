@@ -1,0 +1,176 @@
+{
+  "name": "footnote-core",
+  "version": 1,
+  "description": "Hand-labelled claims for measuring verification quality. Each case pairs a short source corpus with claims written about it, spanning supported, partial, unsupported and contradicted. Contradictions deliberately include numeric, polarity and entity-substitution varieties so that the harness exposes what each judge can and cannot catch.",
+  "cases": [
+    {
+      "case": "acme-q3-earnings",
+      "documents": {
+        "q3-earnings.txt": [
+          "Acme Corporation Third Quarter Results. Revenue for the quarter was 2.1 billion dollars, an increase of 34 percent compared with the same quarter last year. Growth was strongest in the EMEA region, which grew 51 percent year over year and now accounts for 28 percent of total revenue.",
+          "Operating margin was 18.4 percent, down from 19.1 percent in the prior year quarter, reflecting increased investment in the company's data centre footprint. The company opened two new data centres during the quarter, in Dublin and in Singapore.",
+          "Chief Executive Maria Alvarez said the company remains on track to reach annual revenue of 9 billion dollars. Free cash flow was 410 million dollars for the quarter. The board approved a share repurchase programme of up to 500 million dollars.",
+          "Headcount at the end of the quarter was 11,400, compared with 10,900 at the end of the prior quarter. The company reiterated its full year operating margin guidance of approximately 18 percent."
+        ]
+      },
+      "claims": [
+        {"id": "acme-1", "text": "Revenue for the quarter was 2.1 billion dollars, an increase of 34 percent year over year.", "label": "supported"},
+        {"id": "acme-2", "text": "Growth was strongest in the EMEA region, which grew 51 percent year over year.", "label": "supported"},
+        {"id": "acme-3", "text": "Operating margin was 18.4 percent, down from 19.1 percent in the prior year quarter.", "label": "supported"},
+        {"id": "acme-4", "text": "The board approved a share repurchase programme of up to 500 million dollars.", "label": "supported"},
+        {"id": "acme-5", "text": "Free cash flow was 510 million dollars for the quarter.", "label": "contradicted"},
+        {"id": "acme-6", "text": "Headcount at the end of the quarter was 12,400 employees.", "label": "contradicted"},
+        {"id": "acme-7", "text": "The company opened two new data centres during the quarter, in Dublin and in Tokyo.", "label": "contradicted"},
+        {"id": "acme-8", "text": "Chief Executive Maria Alvarez said the company remains on track to reach annual revenue of 9 billion dollars, driven mainly by the new Dublin data centre.", "label": "partial"},
+        {"id": "acme-9", "text": "The company announced a quarterly dividend of 12 cents per share.", "label": "unsupported"}
+      ]
+    },
+    {
+      "case": "mars-rover",
+      "documents": {
+        "rover-mission.txt": [
+          "The Perseverance rover landed in Jezero Crater on 18 February 2021. Jezero Crater is approximately 45 kilometres wide and is believed to have held a lake and a river delta more than 3 billion years ago.",
+          "The rover carries seven scientific instruments and 23 cameras. It also delivered the Ingenuity helicopter, the first aircraft to achieve powered flight on another planet. Ingenuity completed its first flight on 19 April 2021, hovering for about 39 seconds.",
+          "Perseverance collects rock cores in sealed titanium tubes. The mission plans to collect at least 30 samples for possible return to Earth by a later mission. The rover is powered by a radioisotope thermoelectric generator rather than solar panels."
+        ]
+      },
+      "claims": [
+        {"id": "mars-1", "text": "Perseverance landed in Jezero Crater in February 2021.", "label": "supported"},
+        {"id": "mars-2", "text": "Jezero Crater is approximately 45 kilometres wide.", "label": "supported"},
+        {"id": "mars-3", "text": "The rover carries seven scientific instruments and 23 cameras.", "label": "supported"},
+        {"id": "mars-4", "text": "The mission plans to collect at least 30 samples for possible return to Earth.", "label": "supported"},
+        {"id": "mars-5", "text": "Ingenuity completed its first flight hovering for about 90 seconds.", "label": "contradicted"},
+        {"id": "mars-6", "text": "Jezero Crater is approximately 145 kilometres wide.", "label": "contradicted"},
+        {"id": "mars-7", "text": "The rover is powered by solar panels.", "label": "contradicted"},
+        {"id": "mars-8", "text": "Perseverance collects rock cores in sealed titanium tubes for a sample return mission scheduled for 2028.", "label": "partial"},
+        {"id": "mars-9", "text": "Perseverance discovered liquid water flowing on the surface of Mars.", "label": "unsupported"}
+      ]
+    },
+    {
+      "case": "city-transit-plan",
+      "documents": {
+        "transit-review.txt": [
+          "The city council approved the Central Corridor transit plan on 12 March. The plan allocates 340 million pounds over eight years and adds 14 kilometres of dedicated bus lanes.",
+          "Fares will be frozen at 2.40 pounds for the first three years of the plan. The council estimates that journey times on the corridor will fall by 22 percent once the lanes are complete.",
+          "The plan does not include an extension of the tram network, which councillors deferred to a later review. Consultation responses numbered 4,812, of which 61 percent supported the proposals."
+        ]
+      },
+      "claims": [
+        {"id": "transit-1", "text": "The city council approved the Central Corridor transit plan on 12 March.", "label": "supported"},
+        {"id": "transit-2", "text": "The plan allocates 340 million pounds over eight years.", "label": "supported"},
+        {"id": "transit-3", "text": "Fares will be frozen at 2.40 pounds for the first three years.", "label": "supported"},
+        {"id": "transit-4", "text": "Consultation responses numbered 4,812, of which 61 percent supported the proposals.", "label": "supported"},
+        {"id": "transit-5", "text": "The council estimates that journey times will fall by 40 percent.", "label": "contradicted"},
+        {"id": "transit-6", "text": "The plan includes an extension of the tram network.", "label": "contradicted"},
+        {"id": "transit-7", "text": "The plan adds 14 kilometres of dedicated bus lanes and six new bus stations.", "label": "partial"},
+        {"id": "transit-8", "text": "The council also approved free travel for residents over 65.", "label": "unsupported"}
+      ]
+    },
+    {
+      "case": "framework-docs",
+      "documents": {
+        "framework-guide.txt": [
+          "Routes are declared with the route decorator. By default the development server listens on port 8000 and reloads automatically when a source file changes.",
+          "Middleware runs in the order it is registered. Each middleware receives the request and a call_next function, and must return a response. Exceptions raised inside middleware are handled by the registered exception handlers.",
+          "Background tasks run after the response has been sent. They share the same event loop as the request handler, so a blocking call inside a background task will block other requests. Use a thread pool for blocking work.",
+          "Configuration is read from environment variables, then from a .env file, then from defaults declared on the settings class."
+        ]
+      },
+      "claims": [
+        {"id": "docs-1", "text": "By default the development server listens on port 8000.", "label": "supported"},
+        {"id": "docs-2", "text": "Middleware runs in the order it is registered.", "label": "supported"},
+        {"id": "docs-3", "text": "A blocking call inside a background task will block other requests.", "label": "supported"},
+        {"id": "docs-4", "text": "Configuration is read from environment variables, then from a .env file, then from defaults.", "label": "supported"},
+        {"id": "docs-5", "text": "By default the development server listens on port 3000.", "label": "contradicted"},
+        {"id": "docs-6", "text": "Background tasks run before the response has been sent.", "label": "contradicted"},
+        {"id": "docs-7", "text": "Routes are declared with the route decorator and generate an OpenAPI schema automatically.", "label": "partial"},
+        {"id": "docs-8", "text": "The framework ships with a built-in object relational mapper.", "label": "unsupported"}
+      ]
+    },
+    {
+      "case": "clinical-trial",
+      "documents": {
+        "trial-summary.txt": [
+          "The randomised trial enrolled 1,204 adults with moderate hypertension across 38 sites. Participants received either the study drug or placebo for 24 weeks.",
+          "Systolic blood pressure fell by a mean of 12.6 mmHg in the treatment group and 4.1 mmHg in the placebo group. The difference was statistically significant with a p value below 0.001.",
+          "Adverse events were reported by 18 percent of the treatment group and 15 percent of the placebo group. There were no deaths in either group. Three participants in the treatment group discontinued because of dizziness.",
+          "The trial was funded by the manufacturer. Follow up beyond 24 weeks was not conducted."
+        ]
+      },
+      "claims": [
+        {"id": "trial-1", "text": "The trial enrolled 1,204 adults with moderate hypertension across 38 sites.", "label": "supported"},
+        {"id": "trial-2", "text": "Systolic blood pressure fell by a mean of 12.6 mmHg in the treatment group.", "label": "supported"},
+        {"id": "trial-3", "text": "Adverse events were reported by 18 percent of the treatment group.", "label": "supported"},
+        {"id": "trial-4", "text": "There were no deaths in either group.", "label": "supported"},
+        {"id": "trial-5", "text": "Two participants in the treatment group discontinued because of dizziness.", "label": "contradicted"},
+        {"id": "trial-6", "text": "Participants received the study drug or placebo for 52 weeks.", "label": "contradicted"},
+        {"id": "trial-7", "text": "The trial was funded by an independent government agency.", "label": "contradicted"},
+        {"id": "trial-8", "text": "The study drug lowered systolic blood pressure and also reduced cholesterol.", "label": "partial"},
+        {"id": "trial-9", "text": "The study drug was approved by the regulator following the trial.", "label": "unsupported"}
+      ]
+    },
+    {
+      "case": "match-report",
+      "documents": {
+        "match-report.txt": [
+          "Riverton United beat Ashford City 3-1 at Kingsfield on Saturday. Riverton took the lead in the 12th minute through a header from Daniel Okafor.",
+          "Ashford equalised just before half time when Luis Barrera converted a penalty. Riverton restored their lead in the 58th minute and added a third in stoppage time.",
+          "The win moves Riverton to second in the table on 47 points, two behind leaders Colton Rovers. Ashford remain in eleventh. Attendance was 24,318."
+        ]
+      },
+      "claims": [
+        {"id": "match-1", "text": "Riverton United beat Ashford City 3-1 at Kingsfield on Saturday.", "label": "supported"},
+        {"id": "match-2", "text": "Daniel Okafor scored with a header in the 12th minute.", "label": "supported"},
+        {"id": "match-3", "text": "Luis Barrera converted a penalty for Ashford just before half time.", "label": "supported"},
+        {"id": "match-4", "text": "The win moves Riverton to second in the table on 47 points.", "label": "supported"},
+        {"id": "match-5", "text": "Attendance was 34,318.", "label": "contradicted"},
+        {"id": "match-6", "text": "Riverton United beat Ashford City 4-1 at Kingsfield.", "label": "contradicted"},
+        {"id": "match-7", "text": "Riverton restored their lead in the 58th minute and added a third from the penalty spot in stoppage time.", "label": "partial"},
+        {"id": "match-8", "text": "Ashford City were reduced to ten men after a red card.", "label": "unsupported"}
+      ]
+    },
+    {
+      "case": "lease-agreement",
+      "documents": {
+        "lease-terms.txt": [
+          "The tenant shall pay rent of 1,850 pounds per calendar month, payable in advance on the first day of each month. The term of the lease is 24 months commencing 1 September.",
+          "A deposit of 2,775 pounds is held in a government approved tenancy deposit scheme. The landlord shall return the deposit within 10 days of the end of the tenancy, less any lawful deductions.",
+          "The tenant may not sublet the property or keep pets without the written consent of the landlord. The landlord is responsible for the repair of the structure and exterior, and for the heating and hot water systems.",
+          "Either party may terminate after the first 12 months by giving two months written notice."
+        ]
+      },
+      "claims": [
+        {"id": "lease-1", "text": "The tenant shall pay rent of 1,850 pounds per calendar month, payable in advance.", "label": "supported"},
+        {"id": "lease-2", "text": "The term of the lease is 24 months commencing 1 September.", "label": "supported"},
+        {"id": "lease-3", "text": "A deposit of 2,775 pounds is held in a government approved tenancy deposit scheme.", "label": "supported"},
+        {"id": "lease-4", "text": "The landlord is responsible for the repair of the structure and exterior.", "label": "supported"},
+        {"id": "lease-5", "text": "The landlord shall return the deposit within 30 days of the end of the tenancy.", "label": "contradicted"},
+        {"id": "lease-6", "text": "The tenant may keep pets at the property.", "label": "contradicted"},
+        {"id": "lease-7", "text": "Either party may terminate after the first 12 months by giving two months written notice in recorded delivery.", "label": "partial"},
+        {"id": "lease-8", "text": "The lease includes a parking space at the rear of the property.", "label": "unsupported"}
+      ]
+    },
+    {
+      "case": "battery-paper",
+      "documents": {
+        "battery-paper.txt": [
+          "We report a lithium metal anode with a composite protective layer that retains 89 percent of initial capacity after 800 cycles at a current density of 2 mA per square centimetre.",
+          "The protective layer is 3.4 micrometres thick and is deposited by atomic layer deposition. Cells without the layer retained only 41 percent of capacity under the same conditions.",
+          "Coulombic efficiency averaged 99.2 percent over the first 200 cycles. The cells were tested at 25 degrees Celsius. We did not evaluate performance at low temperature.",
+          "Scale up to pouch cells has not yet been demonstrated."
+        ]
+      },
+      "claims": [
+        {"id": "battery-1", "text": "The anode retains 89 percent of initial capacity after 800 cycles.", "label": "supported"},
+        {"id": "battery-2", "text": "The protective layer is 3.4 micrometres thick and is deposited by atomic layer deposition.", "label": "supported"},
+        {"id": "battery-3", "text": "Cells without the layer retained only 41 percent of capacity.", "label": "supported"},
+        {"id": "battery-4", "text": "Coulombic efficiency averaged 99.2 percent over the first 200 cycles.", "label": "supported"},
+        {"id": "battery-5", "text": "The anode retains 89 percent of initial capacity after 1,500 cycles.", "label": "contradicted"},
+        {"id": "battery-6", "text": "Coulombic efficiency averaged 88.5 percent over the first 200 cycles.", "label": "contradicted"},
+        {"id": "battery-7", "text": "Scale up to pouch cells has been demonstrated in a pilot line.", "label": "contradicted"},
+        {"id": "battery-8", "text": "The cells were tested at 25 degrees Celsius and retained capacity at minus 20 degrees Celsius.", "label": "partial"},
+        {"id": "battery-9", "text": "The protective layer reduces manufacturing cost by 30 percent.", "label": "unsupported"}
+      ]
+    }
+  ]
+}
