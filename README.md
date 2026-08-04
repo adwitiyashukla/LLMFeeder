@@ -1,6 +1,7 @@
 # Footnote
 
-**Check whether generated text is actually supported by your sources, claim by claim, with exact citations.**
+**Catches AI hallucinations by checking every claim against your sources, with character-exact citations.**
+**0.93 F1 detection. Zero API keys.**
 
 [![CI](https://github.com/adwitiyashukla/footnote/actions/workflows/ci.yml/badge.svg)](https://github.com/adwitiyashukla/footnote/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/footnote-verify.svg)](https://pypi.org/project/footnote-verify/)

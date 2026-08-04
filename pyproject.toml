@@ -1,7 +1,7 @@
 [project]
 name = "footnote-verify"
 version = "0.1.0"
-description = "Footnote: check whether generated text is actually supported by your sources, claim by claim, with exact citations."
+description = "Catches AI hallucinations by checking every claim against your sources, with character-exact citations. Offline by default, no API key required."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
