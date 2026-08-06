@@ -5,8 +5,8 @@ authority for character offsets. Downstream code never sees the original bytes, 
 span reported against ``text`` is always resolvable and always highlightable.
 
 Only PDF needs a third-party library. Everything else, including HTML and the
-zipped XML office formats, is handled with the standard library so that a bare
-``pip install footnote-verify`` covers the common cases.
+zipped XML office formats, is handled with the standard library, so a bare install
+with no extras covers the common cases.
 """
 
 from __future__ import annotations
@@ -193,7 +193,9 @@ def _read_pdf(path: Path) -> tuple[str, tuple[tuple[int, int], ...]]:
     try:
         import pdfplumber
     except ImportError as exc:  # pragma: no cover - depends on the install extras
-        raise LoaderError("PDF support needs an extra: pip install 'footnote-verify[pdf]'") from exc
+        raise LoaderError(
+            "PDF support needs an extra. From a checkout: pip install -e '.[pdf]'"
+        ) from exc
 
     chunks: list[str] = []
     breaks: list[tuple[int, int]] = []

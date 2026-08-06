@@ -255,7 +255,9 @@ def mcp(
     try:
         from footnote.mcp_server import serve
     except ImportError as exc:  # pragma: no cover - depends on the install extras
-        err.print("[red]the MCP server needs an extra:[/red] pip install 'footnote-verify[mcp]'")
+        err.print(
+            "[red]the MCP server needs an extra.[/red] From a checkout: pip install -e '.[mcp]'"
+        )
         raise typer.Exit(code=1) from exc
     serve(default_sources=sources)
 

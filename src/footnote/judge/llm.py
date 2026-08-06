@@ -14,8 +14,8 @@ discarded rather than trusted, which makes a fabricated citation impossible by
 construction.
 
 There is no SDK. The provider adapter is about a hundred lines over the standard
-library, so ``pip install footnote-verify`` gets the LLM judge with no extra
-dependency and no version skew with whatever else is in the environment.
+library, so the LLM judge works from a bare install with no extra dependency and no
+version skew with whatever else is in the environment.
 """
 
 from __future__ import annotations

@@ -4,9 +4,9 @@
 **0.93 F1 detection. Zero API keys.**
 
 [![CI](https://github.com/adwitiyashukla/footnote/actions/workflows/ci.yml/badge.svg)](https://github.com/adwitiyashukla/footnote/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/footnote-verify.svg)](https://pypi.org/project/footnote-verify/)
-[![Python](https://img.shields.io/pypi/pyversions/footnote-verify.svg)](https://pypi.org/project/footnote-verify/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Live demo](https://img.shields.io/badge/demo-live%20report-4c8dff.svg)](https://adwitiyashukla.github.io/footnote/example-report.html)
 
 You gave a model some documents and it gave you a paragraph back. Some of that paragraph is in the documents. Some of it is not. Footnote tells you which is which, and points at the exact characters.
 
@@ -60,13 +60,24 @@ One more distinction that turns out to matter a lot. If a claim says "six new bu
 ## Install
 
 ```bash
-pip install footnote-verify              # core: CLI, engine, txt/md/html/json sources
-pip install "footnote-verify[pdf]"       # + PDF sources
-pip install "footnote-verify[mcp]"       # + the Model Context Protocol server
-pip install "footnote-verify[all]"       # everything
+pip install git+https://github.com/adwitiyashukla/footnote.git              # core
+pip install "footnote-verify[pdf] @ git+https://github.com/adwitiyashukla/footnote.git"   # + PDF sources
+pip install "footnote-verify[all] @ git+https://github.com/adwitiyashukla/footnote.git"   # everything
+```
+
+Or clone and install locally:
+
+```bash
+git clone https://github.com/adwitiyashukla/footnote.git
+cd footnote
+pip install -e ".[all]"
 ```
 
 Python 3.11 or newer. The CLI is `footnote`. Quote the brackets, or your shell will treat them as a glob.
+
+Extras are `pdf` (PDF sources), `mcp` (the Model Context Protocol server), and `all`. The bare install needs nothing beyond `typer` and `rich`.
+
+Not on PyPI yet. The package builds cleanly and CI verifies the distribution on every push, so publishing is a one-command step whenever it is wanted.
 
 The default path needs no API key, no model download and no network. It is deterministic: the same input gives the same verdicts every time.
 
@@ -166,7 +177,7 @@ There is no SDK dependency. The provider adapter is about a hundred lines over t
 Let an agent check its own output mid-task instead of shipping an unverified answer.
 
 ```bash
-pip install "footnote-verify[mcp]"
+pip install -e ".[mcp]"
 footnote mcp --sources ./docs
 ```
 
