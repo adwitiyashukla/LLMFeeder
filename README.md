@@ -251,9 +251,9 @@ footnote eval
 
 CI runs lint, `mypy --strict`, the tests and the eval harness on Python 3.11 and 3.12.
 
-## About
+## Author
 
-I'm Adwitiya, a master's student. I built this as a personal project to get better at Python, testing and evaluation, and because the underlying problem genuinely bugged me. Happy to hear if you find a case it gets wrong.
+Adwitiya Shukla
 
 ## License
 
