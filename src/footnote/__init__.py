@@ -1,18 +1,3 @@
-"""Footnote: claim-level source verification for generated text.
-
-Give it a piece of writing and the documents it was supposedly derived from, and it
-returns a verdict for every claim, each one pointing at an exact character range in
-an exact file.
-
-    >>> from footnote import check
-    >>> result = check("Revenue grew 34% to $2.1B.", ["./sources"])   # doctest: +SKIP
-    >>> result.faithfulness                                           # doctest: +SKIP
-    0.91
-
-The default judge is deterministic and runs entirely offline. The LLM judge is
-opt-in and activates only when a credential is present on the local machine.
-"""
-
 from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version

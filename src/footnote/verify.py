@@ -1,15 +1,3 @@
-"""The orchestrator: text plus sources in, verdicts out.
-
-The pipeline is deliberately short and each step is separately testable.
-
-    segment  ->  retrieve  ->  judge  ->  aggregate
-
-Everything above this module is an interface (a CLI, an MCP tool, a report) and
-everything below is a component (a loader, an index, a judge). This is the only
-place they meet, which is what keeps the public API small enough to be worth
-depending on.
-"""
-
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
@@ -40,7 +28,6 @@ def check_documents(
     min_words: int = 4,
     warnings: Sequence[str] = (),
 ) -> CheckResult:
-    """Verify ``answer`` against already-loaded documents."""
     resolved: Judge = (
         resolve_judge(judge, supported=supported, partial=partial, model=model)
         if isinstance(judge, str)
@@ -81,15 +68,6 @@ def check(
     model: str | None = None,
     min_words: int = 4,
 ) -> CheckResult:
-    """Verify ``answer`` against files and directories on disk.
-
-    This is the main entry point:
-
-    >>> from footnote import check
-    >>> result = check("Revenue grew 34%.", ["./sources"])
-    >>> result.faithfulness  # doctest: +SKIP
-    0.91
-    """
     documents, warnings = load_corpus(sources)
     return check_documents(
         answer,
@@ -109,6 +87,5 @@ def check_files(
     sources: Iterable[str | Path],
     **kwargs: object,
 ) -> CheckResult:
-    """Verify the contents of a file. Convenience wrapper over :func:`check`."""
     text = load_text(Path(answer_path).read_text(encoding="utf-8", errors="replace")).text
     return check(text, sources, **kwargs)  # type: ignore[arg-type]

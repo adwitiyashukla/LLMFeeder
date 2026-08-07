@@ -1,16 +1,3 @@
-"""Tokenisation, light stemming, numeric parsing and negation detection.
-
-These are the primitives the lexical judge is built from. They are deliberately
-dependency-free and deterministic: the same input always produces the same tokens,
-which is what lets the whole no-key path be reproducible and testable.
-
-The numeric handling is the part that earns its keep. Most attribution tools reduce
-a claim and a candidate span to a similarity score, which cannot distinguish
-"revenue grew 34%" from "revenue grew 43%" because the two strings are nearly
-identical. Footnote parses numbers into comparable values instead, so a figure that
-disagrees with the source is caught rather than scored as a near match.
-"""
-
 from __future__ import annotations
 
 import re
@@ -27,8 +14,6 @@ __all__ = [
     "tokenize",
 ]
 
-# Words carrying no discriminating power. Kept small on purpose: an over-eager stop
-# list throws away the negations and quantifiers that decide a verdict.
 STOPWORDS: frozenset[str] = frozenset(
     [
         "a",
@@ -135,7 +120,6 @@ STOPWORDS: frozenset[str] = frozenset(
     ]
 )
 
-# Cues that flip the polarity of an assertion.
 NEGATIONS: frozenset[str] = frozenset(
     [
         "no",
@@ -182,10 +166,6 @@ NEGATIONS: frozenset[str] = frozenset(
 
 _TOKEN_RE = re.compile(r"[A-Za-z0-9]+(?:['’\-.][A-Za-z0-9]+)*")
 
-# Small quantities are as often spelled out as written in digits, and "three
-# participants" contradicts "two participants" just as plainly as 3 contradicts 2.
-# "One" is excluded on purpose: it is far more often a pronoun ("one of the sites")
-# than a count, and reading it as a quantity produces false contradictions.
 _WORD_NUMBERS: dict[str, float] = {
     "two": 2,
     "three": 3,
@@ -253,8 +233,6 @@ _SUFFIXES: tuple[str, ...] = (
 
 @dataclass(frozen=True, slots=True)
 class Token:
-    """One word with its position in the source string."""
-
     text: str
     norm: str
     start: int
@@ -266,29 +244,16 @@ class Token:
 
     @property
     def is_numeric(self) -> bool:
-        """True for digits and for spelled-out quantities alike.
-
-        Both are reconciled by value in the numeric check, so both are kept out of
-        the coverage vocabulary. Counting them in either place twice would penalise
-        a claim once for the wording and again for the figure.
-        """
         return any(ch.isdigit() for ch in self.norm) or self.text.lower() in _WORD_NUMBERS
 
 
 def stem(word: str) -> str:
-    """Strip a common English suffix so morphological variants collide.
-
-    Crude by design. "resigned", "resignation" and "resigns" all need to match the
-    same source sentence, and a real stemmer would be a dependency for a gain that
-    does not show up in the evaluation numbers.
-    """
     lowered = word.lower()
     if len(lowered) <= 3 or any(ch.isdigit() for ch in lowered):
         return lowered
     for suffix in _SUFFIXES:
         if lowered.endswith(suffix) and len(lowered) - len(suffix) >= 3:
             root = lowered[: -len(suffix)]
-            # Undo a doubled consonant, e.g. "stopped" -> "stop".
             if len(root) > 3 and root[-1] == root[-2] and root[-1] not in "aeiou":
                 root = root[:-1]
             return root
@@ -296,7 +261,6 @@ def stem(word: str) -> str:
 
 
 def tokenize(text: str, *, offset: int = 0) -> list[Token]:
-    """Split ``text`` into tokens, recording absolute offsets."""
     return [
         Token(
             text=m.group(0),
@@ -309,7 +273,6 @@ def tokenize(text: str, *, offset: int = 0) -> list[Token]:
 
 
 def content_tokens(text: str, *, offset: int = 0) -> list[Token]:
-    """Tokens that carry meaning: stopwords dropped, negations and numbers kept."""
     return [
         t
         for t in tokenize(text, offset=offset)
@@ -318,12 +281,9 @@ def content_tokens(text: str, *, offset: int = 0) -> list[Token]:
 
 
 def has_negation(text: str) -> bool:
-    """True when the text contains an explicit negation cue."""
     lowered = text.lower()
     return any(t.group(0).lower() in NEGATIONS for t in _TOKEN_RE.finditer(lowered))
 
-
-# --- numbers ---------------------------------------------------------------
 
 _MAGNITUDES: dict[str, float] = {
     "hundred": 1e2,
@@ -352,8 +312,6 @@ _NUMBER_RE = re.compile(
     re.VERBOSE,
 )
 
-# Ordinals and bare years are structural, not quantitative. Treating "2026" or
-# "Q3" as a figure to reconcile produces false contradictions.
 _YEAR_RE = re.compile(r"^(1[89]\d{2}|20\d{2})$")
 
 _WORD_NUMBER_RE = re.compile(
@@ -365,36 +323,21 @@ _WORD_NUMBER_RE = re.compile(
 
 @dataclass(frozen=True, slots=True)
 class NumericMention:
-    """A number parsed into something comparable across surface forms."""
-
     raw: str
     value: float
     unit: str | None
     start: int
     end: int
-    #: Years and ordinals locate a statement rather than quantify it.
     is_year: bool = False
     is_ordinal: bool = False
-    #: Nearest content word on either side, which is what the figure is *about*.
-    #: "six new bus stations" anchors on "new"/"stations"; "14 kilometres" anchors
-    #: on "kilometres". Two figures are only worth comparing when they share one.
     before: str | None = None
     after: str | None = None
 
     @property
     def is_quantity(self) -> bool:
-        """True when the mention is a figure worth reconciling against a source."""
         return not (self.is_year or self.is_ordinal)
 
     def measures_same_thing(self, other: NumericMention) -> bool:
-        """True when two figures quantify the same thing and can be compared.
-
-        Without this, any two numbers in a topically related passage look
-        comparable, and a claim that adds a detail the source omits gets reported as
-        a contradiction. Requiring a shared anchor word keeps "six bus stations" and
-        "14 kilometres of bus lanes" apart while still recognising that "410 million
-        dollars" and "510 million dollars" are the same quantity stated differently.
-        """
         if self.unit and other.unit and self.unit != other.unit:
             return False
         if self.unit and other.unit and self.unit == other.unit:
@@ -404,11 +347,6 @@ class NumericMention:
         return bool(anchors & theirs)
 
     def close_to(self, other: NumericMention, *, rel_tol: float = 0.005) -> bool:
-        """True when two mentions denote the same quantity.
-
-        Units must not actively disagree: 34 and 34% are not the same statement,
-        but 34 and 34 with one side simply not repeating the unit are.
-        """
         if self.unit and other.unit and self.unit != other.unit:
             return False
         if self.value == other.value:
@@ -433,11 +371,6 @@ def _normalise_unit(raw: str | None) -> str | None:
 
 
 def extract_numbers(text: str, *, offset: int = 0) -> list[NumericMention]:
-    """Find every quantity in ``text``, resolving magnitude words and currencies.
-
-    ``$2.1B``, ``2.1 billion`` and ``2,100,000,000`` all parse to the same value, so
-    a claim and its source can be compared even when they are written differently.
-    """
     out: list[NumericMention] = []
     for m in _NUMBER_RE.finditer(text):
         digits = m.group("value")
@@ -475,7 +408,7 @@ def extract_numbers(text: str, *, offset: int = 0) -> list[NumericMention]:
     spans = [(n.start - offset, n.end - offset) for n in out]
     for m in _WORD_NUMBER_RE.finditer(text):
         if any(s <= m.start() < e for s, e in spans):
-            continue  # already captured as digits
+            continue
         value = _WORD_NUMBERS[m.group("word").lower()]
         magnitude = (m.group("magnitude") or "").lower()
         if magnitude:
@@ -495,7 +428,6 @@ def extract_numbers(text: str, *, offset: int = 0) -> list[NumericMention]:
 
 
 def _anchor(mentions: list[NumericMention], text: str, offset: int) -> list[NumericMention]:
-    """Attach the nearest content word on each side of every figure."""
     if not mentions:
         return mentions
     words = [
@@ -527,20 +459,6 @@ def numbers_agree(
     claim_numbers: list[NumericMention],
     span_numbers: list[NumericMention],
 ) -> tuple[list[NumericMention], list[NumericMention]]:
-    """Reconcile the figures in a claim against the figures available in a passage.
-
-    The distinction this draws is the important one. A claim asserting "410 million"
-    where the passage says "510 million" *disagrees* with the source. A claim
-    asserting "six new bus stations" where the passage gives no station count at all
-    is merely *unstated*: the source is silent, not contradictory, and reporting
-    silence as a contradiction is how an attribution tool loses a reader's trust.
-
-    A figure counts as disagreeing only when the passage offers a comparable figure,
-    meaning one whose unit does not rule out the comparison. Years and ordinals are
-    excluded throughout, since they locate a statement rather than quantify it.
-
-    Returns ``(disagreeing, unstated)``.
-    """
     quantities = [n for n in claim_numbers if n.is_quantity]
     if not quantities:
         return [], []

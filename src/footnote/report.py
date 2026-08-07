@@ -1,15 +1,3 @@
-"""The HTML report.
-
-One self-contained file: no server, no build step, no external stylesheet or script.
-That matters more than it sounds. A report you can email, commit to a repository or
-attach to a pull request gets looked at, and a localhost dashboard does not.
-
-The layout puts claims on the left and the sources on the right. Selecting a claim
-scrolls its cited passage into view and highlights the exact characters the verdict
-rests on, which is the fastest way to answer the only question a reader actually has:
-show me where it says that.
-"""
-
 from __future__ import annotations
 
 import html
@@ -162,12 +150,6 @@ class _Mark:
 
 
 def _collect_marks(result: CheckResult) -> dict[str, list[_Mark]]:
-    """Group primary citations by document, merging overlaps into one mark.
-
-    Two claims can legitimately rest on the same sentence. Rather than nesting
-    elements, the overlapping claim ids are attached to a single mark so that
-    selecting either claim lights it up.
-    """
     raw: dict[str, list[tuple[int, int, Verdict, str]]] = {}
     for entry in result.claims:
         best = entry.best
@@ -186,7 +168,6 @@ def _collect_marks(result: CheckResult) -> dict[str, list[_Mark]]:
                 merged[-1] = _Mark(
                     start=last.start,
                     end=max(last.end, end),
-                    # The more severe verdict wins the colour.
                     verdict=last.verdict if last.verdict.rank <= verdict.rank else verdict,
                     claim_ids=(*last.claim_ids, claim_id),
                 )
@@ -197,7 +178,6 @@ def _collect_marks(result: CheckResult) -> dict[str, list[_Mark]]:
 
 
 def _render_document(document: Document, marks: list[_Mark]) -> str:
-    """Escape the document body and wrap each cited range in a ``<mark>``."""
     pieces: list[str] = []
     cursor = 0
     for mark in marks:
@@ -290,7 +270,6 @@ def _metrics_html(result: CheckResult) -> str:
 
 
 def render_report(result: CheckResult, *, title: str = "Footnote report") -> str:
-    """Render the whole report as one HTML string."""
     warnings = "".join(f'<div class="warn">{html.escape(w)}</div>' for w in result.warnings)
     generated = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     docs = len(result.documents)
@@ -339,7 +318,6 @@ def write_report(
     *,
     title: str = "Footnote report",
 ) -> Path:
-    """Render and write the report, returning the path written."""
     destination = Path(path)
     if destination.parent != Path():
         destination.parent.mkdir(parents=True, exist_ok=True)

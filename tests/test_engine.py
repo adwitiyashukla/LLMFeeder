@@ -1,5 +1,3 @@
-"""Retrieval, the lexical judge, and end-to-end verification."""
-
 from __future__ import annotations
 
 import pytest
@@ -156,9 +154,6 @@ class TestJudgeConfiguration:
         assert result.judge == "lexical"
 
     def test_the_judge_works_both_bound_and_unbound(self, corpus: list[Document]) -> None:
-        # Unbound the judge weights every term equally; bound it adopts the corpus
-        # IDF. A supported claim has to survive both, since the API allows the judge
-        # to be used standalone.
         judge = LexicalJudge()
         (claim,) = segment("Free cash flow was 410 million dollars.", min_words=1)
         index = CorpusIndex(corpus)

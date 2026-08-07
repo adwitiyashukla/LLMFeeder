@@ -1,5 +1,3 @@
-"""Loading sources and carving text into claims."""
-
 from __future__ import annotations
 
 from pathlib import Path

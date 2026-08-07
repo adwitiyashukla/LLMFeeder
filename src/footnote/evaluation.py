@@ -1,19 +1,3 @@
-"""The evaluation harness.
-
-A test suite proves the code does what it was written to do. It says nothing about
-whether what it was written to do actually works. This module answers the second
-question, which is the one that matters for a tool whose entire job is judgement.
-
-Every claim in the dataset carries a hand-assigned label. The harness runs the real
-pipeline over it and reports per-verdict precision, recall and F1, plus the metric
-that matters most in practice: how reliably an unsupported or contradicted claim is
-caught, since a missed hallucination is far more costly than a supported claim that
-gets queried.
-
-Numbers printed here are reproducible with ``footnote eval`` and are the numbers
-quoted in the README. If they disagree, the README is wrong.
-"""
-
 from __future__ import annotations
 
 import json
@@ -39,8 +23,6 @@ __all__ = [
 
 @dataclass(frozen=True, slots=True)
 class EvalExample:
-    """One labelled claim with the corpus it should be judged against."""
-
     id: str
     claim: str
     label: Verdict
@@ -61,12 +43,6 @@ def _bundled_path() -> Path:
 
 
 def load_dataset(path: str | Path | None = None) -> list[EvalExample]:
-    """Load a labelled dataset.
-
-    Accepts the bundled set (default), a JSON array of cases, or JSONL with one case
-    per line. Each case is ``{"case", "documents", "claims"}`` where ``documents``
-    maps a document id to text or to a list of paragraphs.
-    """
     source = Path(path) if path else _bundled_path()
     if not source.is_file():
         raise FileNotFoundError(f"dataset not found: {source}")
@@ -97,16 +73,11 @@ def load_dataset(path: str | Path | None = None) -> list[EvalExample]:
 
 @dataclass
 class Metrics:
-    """Scores for one judge on one dataset."""
-
     judge: str
     total: int = 0
     correct: int = 0
-    #: ``confusion[gold][predicted]`` counts.
     confusion: dict[str, dict[str, int]] = field(default_factory=dict)
-    #: Examples the judge got wrong, for error inspection.
     mistakes: list[dict[str, str]] = field(default_factory=list)
-    #: Claims where a citation was produced but pointed at the wrong document.
     misattributed: int = 0
 
     def __post_init__(self) -> None:
@@ -145,11 +116,6 @@ class Metrics:
         return sum(m["f1"] for m in scored) / len(scored) if scored else 0.0
 
     def detection(self) -> dict[str, float]:
-        """Binary view: did the judge flag the claims that needed attention?
-
-        Positive class is "not supported". This collapses the four-way problem into
-        the decision a user actually makes, which is whether to go and look.
-        """
         tp = fp = fn = tn = 0
         for gold, row in self.confusion.items():
             gold_positive = gold != Verdict.SUPPORTED.value
@@ -199,7 +165,6 @@ def evaluate(
     judge: str = "lexical",
     model: str | None = None,
 ) -> Metrics:
-    """Run the pipeline over labelled examples and score the predictions."""
     from footnote.verify import check_documents
 
     metrics = Metrics(judge=judge)
@@ -233,7 +198,6 @@ def evaluate(
 
 
 def render_metrics(metrics: Metrics, console: Console) -> None:
-    """Print the metrics as tables."""
     from rich.table import Table
 
     per_label = Table(title=None, box=None, pad_edge=False, header_style="dim")
@@ -275,7 +239,6 @@ def render_metrics(metrics: Metrics, console: Console) -> None:
 
 
 def demo_case() -> tuple[str, list[Document]]:
-    """The worked example used by ``footnote demo`` and the committed report."""
     examples = load_dataset()
     case_name = examples[0].case
     documents = list(examples[0].documents)

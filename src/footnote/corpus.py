@@ -1,14 +1,3 @@
-"""Loading source documents into offset-stable text.
-
-Every loader returns a :class:`~footnote.models.Document` whose ``text`` is the one
-authority for character offsets. Downstream code never sees the original bytes, so a
-span reported against ``text`` is always resolvable and always highlightable.
-
-Only PDF needs a third-party library. Everything else, including HTML and the
-zipped XML office formats, is handled with the standard library, so a bare install
-with no extras covers the common cases.
-"""
-
 from __future__ import annotations
 
 import json
@@ -23,10 +12,9 @@ __all__ = ["SUPPORTED_SUFFIXES", "LoaderError", "load_corpus", "load_document", 
 
 
 class LoaderError(RuntimeError):
-    """A source could not be read. Never fatal: the corpus skips it and warns."""
+    pass
 
 
-# Extensions read as plain text. Deliberately broad, since prose is prose.
 _TEXT_SUFFIXES = frozenset(
     {
         ".txt",
@@ -71,7 +59,6 @@ SUPPORTED_SUFFIXES: frozenset[str] = (
     _TEXT_SUFFIXES | _HTML_SUFFIXES | _JSON_SUFFIXES | _PDF_SUFFIXES
 )
 
-# Directories that are never source material.
 _SKIP_DIRS = frozenset(
     {
         ".git",
@@ -94,11 +81,6 @@ _BLANK_RUN = re.compile(r"\n{3,}")
 
 
 def _normalise(text: str) -> str:
-    """Collapse whitespace without destroying paragraph structure.
-
-    Offsets are computed against the result, so this runs once, early, and the
-    output is never re-normalised downstream.
-    """
     text = text.replace("\r\n", "\n").replace("\r", "\n").replace(" ", " ")
     text = _WS_RUN.sub(" ", text)
     text = _BLANK_RUN.sub("\n\n", text)
@@ -106,8 +88,6 @@ def _normalise(text: str) -> str:
 
 
 class _TextExtractor(HTMLParser):
-    """Strip markup to readable text, dropping script, style and head content."""
-
     _BLOCK = frozenset(
         {
             "p",
@@ -159,7 +139,6 @@ class _TextExtractor(HTMLParser):
 
 
 def _flatten_json(value: object, prefix: str = "") -> Iterator[str]:
-    """Render JSON as readable ``path: value`` lines so prose inside it is findable."""
     if isinstance(value, dict):
         for key, item in value.items():
             yield from _flatten_json(item, f"{prefix}.{key}" if prefix else str(key))
@@ -189,7 +168,6 @@ def _read_json(raw: str, suffix: str) -> str:
 
 
 def _read_pdf(path: Path) -> tuple[str, tuple[tuple[int, int], ...]]:
-    """Extract PDF text and record where each page starts in the output string."""
     try:
         import pdfplumber
     except ImportError as exc:  # pragma: no cover - depends on the install extras
@@ -205,17 +183,15 @@ def _read_pdf(path: Path) -> tuple[str, tuple[tuple[int, int], ...]]:
             body = _normalise(page.extract_text() or "")
             breaks.append((cursor, number))
             chunks.append(body)
-            cursor += len(body) + 2  # the "\n\n" join below
+            cursor += len(body) + 2
     return "\n\n".join(chunks), tuple(breaks)
 
 
 def load_text(text: str, doc_id: str = "input", path: str = "<memory>") -> Document:
-    """Wrap an in-memory string as a Document. Used by the MCP server and tests."""
     return Document(doc_id=doc_id, path=path, text=_normalise(text))
 
 
 def load_document(path: Path, doc_id: str | None = None) -> Document:
-    """Load one file. Raises :class:`LoaderError` for anything unreadable."""
     suffix = path.suffix.lower()
     ident = doc_id or path.name
 
@@ -258,14 +234,6 @@ def _walk(root: Path) -> Iterator[Path]:
 
 
 def load_corpus(paths: Iterable[str | Path]) -> tuple[list[Document], list[str]]:
-    """Load every readable source under ``paths``.
-
-    Directories are walked recursively. Unreadable or unsupported files are skipped
-    with a warning rather than failing the run, because one bad file in a folder of
-    two hundred should not stop the check.
-
-    Returns the documents and the list of warnings.
-    """
     documents: list[Document] = []
     warnings: list[str] = []
     seen: dict[str, int] = {}
@@ -281,7 +249,6 @@ def load_corpus(paths: Iterable[str | Path]) -> tuple[list[Document], list[str]]
             warnings.append(f"{path}: no such file or directory")
 
     for file_path in files:
-        # Disambiguate identical basenames from different folders.
         base = file_path.name
         count = seen.get(base, 0)
         seen[base] = count + 1

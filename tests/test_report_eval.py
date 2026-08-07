@@ -1,5 +1,3 @@
-"""The HTML report, the evaluation harness, and the public models."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -121,7 +119,6 @@ class TestMetrics:
 
     def test_detection_treats_anything_unsupported_as_positive(self) -> None:
         metrics = Metrics(judge="test")
-        # A contradiction predicted as merely unsupported is still caught.
         metrics.confusion["contradicted"]["unsupported"] = 4
         metrics.total = 4
         assert metrics.detection()["recall"] == 1.0
@@ -147,13 +144,6 @@ class TestMetrics:
 
 
 class TestQualityFloor:
-    """Guards against a regression in verification quality itself.
-
-    A unit test says the code runs. These say it still works. The thresholds sit a
-    little below the numbers quoted in the README so that ordinary tuning does not
-    break the build, while a real regression does.
-    """
-
     def test_detection_recall_holds(self) -> None:
         assert evaluate(load_dataset(), judge="lexical").detection()["recall"] >= 0.80
 

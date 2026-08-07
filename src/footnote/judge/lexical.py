@@ -1,25 +1,3 @@
-"""The deterministic judge.
-
-This is the default path and the baseline every other result is measured against.
-It needs no API key, no model download and no network, and it returns the same
-answer every time it is run.
-
-The scoring has three parts.
-
-*Coverage* is the IDF-weighted fraction of a claim's content terms that appear in a
-candidate passage. Rare terms count for more than common ones, so a passage earns
-its score by containing the specific words that make the claim what it is.
-
-*Alignment* narrows the cited passage to the tightest character range that still
-accounts for those terms, which is what turns "somewhere on page 4" into an exact
-citation the report can highlight.
-
-*Conflict detection* is what separates this from a similarity score. A passage that
-covers a claim's wording but disagrees on a figure or flips its polarity is not weak
-evidence of support, it is evidence of contradiction, and the two are reported
-differently because they need different fixes.
-"""
-
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -39,24 +17,15 @@ from footnote.textutil import (
 
 __all__ = ["LexicalJudge"]
 
-#: Penalty applied when the passage gives a comparable figure that disagrees.
 NUMERIC_PENALTY = 0.45
-#: Penalty applied when the claim asserts a figure the passage never mentions.
-#: Milder than a disagreement, because the source is silent rather than opposed.
 UNSTATED_FIGURE_PENALTY = 0.72
-#: Penalty applied when the claim and the passage disagree in polarity.
 POLARITY_PENALTY = 0.50
-#: Coverage a conflicting passage needs before it counts as a contradiction rather
-#: than as an unrelated passage that happens to share a word.
 CONTRADICTION_FLOOR = 0.55
-#: Coverage below which a passage is not worth citing at all.
 EVIDENCE_FLOOR = 0.15
 
 
 @dataclass(frozen=True, slots=True)
 class _Assessment:
-    """One candidate, fully scored."""
-
     candidate: Candidate
     span: SourceSpan
     coverage: float
@@ -67,8 +36,6 @@ class _Assessment:
 
 
 class LexicalJudge:
-    """Deterministic claim verification. No credentials, no network."""
-
     name = "lexical"
 
     def __init__(self, *, supported: float = 0.75, partial: float = 0.45) -> None:
@@ -78,16 +45,7 @@ class LexicalJudge:
         self.partial = partial
         self._idf: Callable[[str], float] | None = None
 
-    # -- public API ---------------------------------------------------------
-
     def bind(self, index: CorpusIndex) -> None:
-        """Adopt the corpus term weighting.
-
-        Coverage is only meaningful when rare terms outweigh common ones, and that
-        weighting is a property of the corpus rather than of the judge. Binding
-        keeps the judge usable standalone (uniform weights) while giving it the real
-        distribution whenever a run has built an index.
-        """
         self._idf = index.idf
 
     def judge(self, claim: Claim, candidates: list[Candidate]) -> ClaimResult:
@@ -101,12 +59,6 @@ class LexicalJudge:
             )
 
         idf = self._idf
-        # Figures are deliberately kept out of the coverage weighting. They are
-        # already checked exactly, by value, against the passage; letting them also
-        # count as unmatched vocabulary would penalise a claim twice for the same
-        # discrepancy and push a plain numeric contradiction down into the
-        # unsupported band, where it would be reported as "not mentioned" rather
-        # than as "the source says otherwise".
         topical = [t for t in tokens if not t.is_numeric] or tokens
         weights = {t.norm: (idf(t.norm) if idf else 1.0) for t in topical}
         total = sum(weights.values())
@@ -129,10 +81,6 @@ class LexicalJudge:
 
         clean = [a for a in assessments if a.conflict is None]
         conflicting = [a for a in assessments if a.conflict is not None]
-        # Clean passages compete on the penalised score, so that a claim asserting a
-        # figure the source never gives cannot reach "supported" on wording alone.
-        # Conflicting passages compete on raw coverage, because the question there is
-        # how squarely the passage is about the claim, not how well it supports it.
         best_clean = max(clean, key=lambda a: a.score, default=None)
         best_conflict = max(conflicting, key=lambda a: a.coverage, default=None)
 
@@ -145,8 +93,6 @@ class LexicalJudge:
             evidence=evidence,
             rationale=rationale,
         )
-
-    # -- scoring ------------------------------------------------------------
 
     def _assess(
         self,
@@ -166,8 +112,6 @@ class LexicalJudge:
         coverage = sum(weights[t] for t in matched) / total if total else 0.0
 
         span = self._align(candidate, matched, weights, span_tokens)
-        # Numbers are checked against the whole candidate window, not the narrowed
-        # span: a figure stated one clause away still supports the claim.
         span_numbers = extract_numbers(candidate.text)
         disagreeing, unstated = numbers_agree(claim_numbers, span_numbers)
         polarity_ok = claim_negated == has_negation(candidate.text)
@@ -180,8 +124,6 @@ class LexicalJudge:
             found = ", ".join(n.raw for n in span_numbers if n.is_quantity) or "no figure"
             conflict = f"claim states {figures}; the cited passage states {found}"
         if unstated:
-            # Silence is not disagreement. The claim is weakened for asserting a
-            # figure the source never gives, but it is not called a contradiction.
             penalty *= UNSTATED_FIGURE_PENALTY
         if not polarity_ok:
             penalty *= POLARITY_PENALTY
@@ -207,13 +149,6 @@ class LexicalJudge:
         weights: dict[str, float],
         span_tokens: list[Token],
     ) -> SourceSpan:
-        """Narrow the candidate to the tightest range accounting for the match.
-
-        Considers every contiguous run of matching tokens and keeps the one with
-        the highest matched weight, breaking ties towards the shortest range. The
-        number of matching tokens in a three-sentence window is small, so the
-        quadratic scan is cheaper than the machinery needed to avoid it.
-        """
         document = candidate.document
         hits = [t for t in span_tokens if t.norm in matched]
         if not hits:
@@ -244,20 +179,11 @@ class LexicalJudge:
             page=document.page_at(start),
         )
 
-    # -- verdict ------------------------------------------------------------
-
     def _decide(
         self,
         best_clean: _Assessment | None,
         best_conflict: _Assessment | None,
     ) -> tuple[_Assessment, Verdict, str]:
-        """Choose the evidence to cite and the verdict it implies.
-
-        Order matters. A passage that supports the claim outright wins even when a
-        conflicting passage exists elsewhere, because a corpus is allowed to contain
-        an outdated figure alongside a current one. Only when nothing supports the
-        claim does a conflicting passage become the story.
-        """
         if best_clean is not None and best_clean.score >= self.supported:
             return (
                 best_clean,
@@ -295,7 +221,6 @@ class LexicalJudge:
 
     @staticmethod
     def _evidence(chosen: _Assessment, assessments: list[_Assessment]) -> tuple[Evidence, ...]:
-        """The cited passage first, then the next best distinct alternatives."""
         ordered = [
             chosen,
             *sorted((a for a in assessments if a is not chosen), key=lambda a: -a.coverage),

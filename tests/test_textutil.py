@@ -1,5 +1,3 @@
-"""Tokenisation, stemming, numeric parsing and negation."""
-
 from __future__ import annotations
 
 import pytest
@@ -85,8 +83,6 @@ class TestNumbers:
         assert extract_numbers("two hundred sites")[0].value == 200
 
     def test_one_is_not_read_as_a_count(self) -> None:
-        # "one of the sites" is a pronoun, and treating it as a quantity would
-        # manufacture contradictions.
         assert extract_numbers("one of the sites") == []
 
     def test_anchors_point_at_the_nearest_content_word(self) -> None:
@@ -111,7 +107,6 @@ class TestNumbersAgree:
         assert not unstated
 
     def test_a_figure_the_source_never_gives_is_unstated_not_contradicted(self) -> None:
-        # The heart of the distinction: silence is not disagreement.
         disagreeing, unstated = numbers_agree(
             extract_numbers("14 kilometres of bus lanes and six new bus stations"),
             extract_numbers("adds 14 kilometres of dedicated bus lanes"),
@@ -127,7 +122,6 @@ class TestNumbersAgree:
         assert len(unstated) == 1
 
     def test_a_bare_figure_can_still_match_a_united_one(self) -> None:
-        # "18" and "18%" plausibly denote the same thing, so this is not a conflict.
         disagreeing, _ = numbers_agree(
             extract_numbers("margin of 18%"), extract_numbers("margin of 18")
         )

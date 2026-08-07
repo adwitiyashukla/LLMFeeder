@@ -1,52 +1,23 @@
 # Changelog
 
-All notable changes to Footnote are documented here. This project follows
-[Semantic Versioning](https://semver.org/).
+## 0.1.0
 
-## [0.1.0] - 2026-08-02
+First working version.
 
-First release. Claim-level source verification with exact citations.
+### What it does
 
-### Added
-
-- **Verification engine.** Text is segmented into claims, matched against an
-  IDF-weighted sentence index, narrowed to the tightest supporting character range,
-  and judged into one of four verdicts: supported, partial, unsupported, contradicted.
-- **Numeric reconciliation.** Figures are parsed into comparable values rather than
-  compared as strings, so `$2.1B`, `2.1 billion` and `2,100,000,000` are recognised as
-  the same quantity, units are respected, and a claim stating `510 million` against a
-  source stating `410 million` is reported as a contradiction rather than as a close
-  match. Spelled-out quantities, magnitudes and currency symbols are handled. Years
-  and ordinals are excluded, since they locate a statement rather than quantify it.
-- **Silence is distinguished from disagreement.** A figure the source never mentions
-  is reported as unstated, not contradicted. Two figures are only compared when they
-  share an anchor word, which keeps "six bus stations" apart from "14 kilometres of
-  bus lanes".
-- **Polarity checking**, so a claim that flips a negation in the source is caught.
-- **Self-contained HTML report.** One file, no server and no external assets.
-  Selecting a claim scrolls to and highlights the exact characters its verdict rests
-  on, inside the rendered source. Keyboard navigation with `j` and `k`.
-- **Evaluation harness** with a hand-labelled dataset of 68 claims across 8 source
-  corpora, reporting per-verdict precision, recall and F1 plus binary hallucination
-  detection. Quality thresholds are asserted in the test suite, so a regression in
-  verification quality fails CI.
-- **Optional LLM judge**, off unless a credential is found locally. Bounded to
-  adjudicating the retrieved passages, with a consent notice before any egress and
-  verbatim re-anchoring of every quote, so an unlocatable citation is discarded rather
-  than reported. No SDK dependency; the provider adapter is standard library only and
-  supports OpenAI-compatible endpoints and Anthropic.
-- **Model Context Protocol server**, exposing `verify_against_sources` and
-  `verify_against_text` so an agent can check its own output mid-task.
-- **Source loaders** for text, Markdown, HTML, JSON and JSONL with the standard
-  library, and PDF with page-accurate citations behind the `pdf` extra.
-- **CLI**: `check`, `eval`, `demo`, `mcp`, `version`. `--fail-under` turns the
-  faithfulness score into an exit code for use in CI.
-- **Python API** with a stable span invariant: every reported range satisfies
-  `document.text[span.start:span.end] == span.text`.
+- Splits text into individual claims, then checks each one against a set of source documents and returns one of four verdicts: supported, partial, unsupported or contradicted.
+- Every verdict points at an exact character range in an exact file, so the report can highlight the specific words the answer relies on.
+- Parses numbers into real values instead of comparing them as text, so `$2.1B`, `2.1 billion` and `2,100,000,000` all count as the same figure, and a claim saying 510 million against a source saying 410 million gets caught. Handles units, currency symbols and spelled-out numbers. Ignores years and ordinals, since those locate a statement rather than measure something.
+- Treats a number the source never mentions as unstated rather than contradicted. Two figures only get compared if they share a nearby word, which stops "six bus stations" being checked against "14 kilometres of bus lanes".
+- Checks polarity, so a claim that flips a negation in the source gets flagged.
+- Writes a single self-contained HTML report. No server and no external files, so it can be emailed or committed. Click a claim to jump to its source, or use `j` and `k`.
+- Ships an evaluation harness with 68 hand-labelled claims across 8 source corpora, reporting precision, recall and F1 per verdict plus overall hallucination detection. The thresholds are asserted in the test suite so a drop in quality fails CI.
+- Optional LLM judge, off unless it finds an API key locally. It only sees the passages that were already retrieved, and any quote it produces gets looked up in the source afterwards. If the quote isn't there, the citation is dropped. No SDK dependency, just a small adapter over `urllib` covering OpenAI-compatible endpoints and Anthropic.
+- MCP server exposing `verify_against_sources` and `verify_against_text`, so an AI agent can check its own output before showing it to you.
+- Reads txt, markdown, HTML, JSON and JSONL with no extra dependencies. PDF works with the `pdf` extra and keeps page numbers in the citations.
+- Commands: `check`, `eval`, `demo`, `mcp`. `--fail-under` turns the score into an exit code so it can gate a CI build.
 
 ### Known limitations
 
-The deterministic judge is bag-of-words and therefore cannot detect entity
-substitution, antonym flips, or relations that are implied but never stated. These
-are enumerated with worked examples in the README, and are the cases the LLM judge
-exists to cover.
+The offline judge works on word overlap, so it can't spot a swapped name, an antonym, or a relationship that's implied but never actually written down. The README lists every case it currently gets wrong with examples. The LLM judge exists to cover those.

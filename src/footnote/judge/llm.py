@@ -1,23 +1,3 @@
-"""The opt-in LLM judge.
-
-Off by default. It activates only when a credential is found locally, and it
-announces itself before the first byte leaves the machine so that sending source
-text to a third party is always a decision rather than a surprise.
-
-Two design choices are worth stating.
-
-The LLM is bounded. It does not read the corpus, choose what to retrieve or invent
-citations. It sees the same candidate passages the lexical judge saw and answers one
-constrained question about them, and its answer is re-anchored to real character
-offsets by locating its quote in the passage. A quote that cannot be located is
-discarded rather than trusted, which makes a fabricated citation impossible by
-construction.
-
-There is no SDK. The provider adapter is about a hundred lines over the standard
-library, so the LLM judge works from a bare install with no extra dependency and no
-version skew with whatever else is in the environment.
-"""
-
 from __future__ import annotations
 
 import json
@@ -60,11 +40,6 @@ Reply with JSON only, no prose and no code fence:
 
 
 def load_env_file(path: str | Path = ".env") -> dict[str, str]:
-    """Read a ``.env`` file into a mapping without touching the real environment.
-
-    Existing environment variables always win, so a shell export overrides the file
-    rather than the other way round.
-    """
     env_path = Path(path)
     values: dict[str, str] = {}
     if not env_path.is_file():
@@ -79,16 +54,10 @@ def load_env_file(path: str | Path = ".env") -> dict[str, str]:
 
 
 def _setting(name: str, env_file: str | Path = ".env") -> str | None:
-    """Resolve one setting: real environment first, then the local ``.env``."""
     return os.environ.get(name) or load_env_file(env_file).get(name)
 
 
 def resolve_credential(env_file: str | Path = ".env") -> tuple[str, str, str] | None:
-    """Find a usable provider credential locally.
-
-    Returns ``(provider, api_key, base_url)`` or None. Nothing is ever read from a
-    remote service, and the key is never written anywhere.
-    """
     anthropic = _setting("ANTHROPIC_API_KEY", env_file)
     openai = _setting("OPENAI_API_KEY", env_file)
     base = _setting("FOOTNOTE_BASE_URL", env_file)
@@ -101,12 +70,10 @@ def resolve_credential(env_file: str | Path = ".env") -> tuple[str, str, str] | 
 
 
 def credential_available(env_file: str | Path = ".env") -> bool:
-    """True when the LLM judge can run without asking the user for anything."""
     return resolve_credential(env_file) is not None
 
 
 def _consent_notice(provider: str, model: str) -> None:
-    """Announce third-party egress once per process."""
     global _consent_shown
     if _consent_shown:
         return
@@ -134,8 +101,6 @@ def _post(
 
 
 class LLMJudge:
-    """Verification with an LLM adjudicating the retrieved passages."""
-
     name = "llm"
 
     def __init__(
@@ -157,8 +122,6 @@ class LLMJudge:
 
     def bind(self, index: CorpusIndex) -> None:
         self.fallback.bind(index)
-
-    # -- provider -----------------------------------------------------------
 
     def _complete(self, prompt: str) -> str:
         credential = resolve_credential(self.env_file)
@@ -201,8 +164,6 @@ class LLMJudge:
         choices = body.get("choices", [])
         return str(choices[0]["message"]["content"]) if choices else ""
 
-    # -- judging ------------------------------------------------------------
-
     def judge(self, claim: Claim, candidates: list[Candidate]) -> ClaimResult:
         if not candidates:
             return self.fallback.judge(claim, candidates)
@@ -240,7 +201,6 @@ class LLMJudge:
 
     @staticmethod
     def _parse(raw: str) -> dict[str, Any] | None:
-        """Pull the JSON object out of a reply, tolerating fences and stray prose."""
         text = raw.strip()
         if text.startswith("```"):
             text = text.split("\n", 1)[-1].rsplit("```", 1)[0]
@@ -286,8 +246,6 @@ class LLMJudge:
                 ),
             )
         elif verdict is not Verdict.UNSUPPORTED:
-            # The model produced a quote that is not in the passage. Refusing to
-            # cite it is the whole point: an unlocatable quote is a fabrication.
             rationale = (
                 f"{rationale + '; ' if rationale else ''}"
                 "the model's quote was not found verbatim in the passage, "
@@ -304,7 +262,6 @@ class LLMJudge:
         )
 
     def _confidence(self, parsed: dict[str, Any], verdict: Verdict) -> float:
-        """Map the model's confidence onto the same 0 to 1 scale as the lexical judge."""
         try:
             raw = float(parsed.get("confidence", 0.0))
         except (TypeError, ValueError):
@@ -320,7 +277,6 @@ class LLMJudge:
 
     @staticmethod
     def _locate(candidate: Candidate, quote: str) -> SourceSpan | None:
-        """Re-anchor the model's quote to real offsets, or refuse to cite it."""
         needle = quote.strip()
         if not needle:
             return None
@@ -329,8 +285,6 @@ class LLMJudge:
         if offset == -1:
             offset = haystack.lower().find(needle.lower())
         if offset == -1:
-            # Last resort: match on collapsed whitespace, which is the only
-            # difference a well-behaved model tends to introduce.
             collapsed = " ".join(needle.split())
             offset = " ".join(haystack.split()).find(collapsed)
             if offset == -1:

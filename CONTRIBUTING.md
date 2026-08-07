@@ -1,8 +1,8 @@
 # Contributing
 
-Thanks for taking a look. Bug reports, failing examples and pull requests are all welcome.
+This is a personal project I built while learning, so I'm not expecting a queue of pull requests. But if you found it, tried it, and something broke or gave a weird answer, I'd genuinely like to know.
 
-## Setup
+## Getting set up
 
 ```bash
 git clone https://github.com/adwitiyashukla/footnote.git
@@ -22,19 +22,17 @@ pytest
 footnote eval
 ```
 
-CI runs all five on Python 3.11 and 3.12. A pull request that leaves any of them red will not be merged.
+CI runs all five on Python 3.11 and 3.12, so if any of them are red here they'll be red there too.
 
-## The rule that matters most
+## If you change how the scoring works
 
-**A change to the judging logic must be justified by the evaluation harness, not by intuition.**
+Please run `footnote eval` before and after, and put both sets of numbers in the pull request. The whole point of the tool is the quality of its judgements, so a change that quietly loses a few points of recall is a step backwards even if every test still passes. That's also why there are threshold checks in `tests/test_report_eval.py`, so a regression fails the build instead of slipping through.
 
-Run `footnote eval` before and after your change and put both sets of numbers in the pull request description. Verification quality is the entire product, so a refactor that quietly costs three points of recall is a regression even if every unit test still passes. The test suite asserts floors on accuracy, detection precision and detection recall precisely so that this cannot slip through.
+If your change makes it better, raise those thresholds in the same pull request.
 
-If your change improves quality, raise the floors in `tests/test_report_eval.py::TestQualityFloor` in the same pull request.
+## Adding to the evaluation set
 
-## Adding evaluation cases
-
-The dataset lives in `src/footnote/data/eval.json`. Each case pairs a short corpus with claims written about it.
+The dataset is `src/footnote/data/eval.json`. Each entry is a short set of source documents plus some claims written about them.
 
 ```jsonc
 {
@@ -48,14 +46,14 @@ The dataset lives in `src/footnote/data/eval.json`. Each case pairs a short corp
 
 Labels are `supported`, `partial`, `unsupported` and `contradicted`.
 
-Two things to keep in mind. Write the source first and the claims second, so the claims are not unconsciously shaped to be easy. And do not relabel an example because the tool disagrees with it: if the label is right, the disagreement is a real finding and belongs in the failure analysis in the README.
+Two things I learned the hard way while building this set. Write the source document first and the claims second, otherwise you unconsciously write claims that are easy to get right. And don't change a label just because the tool disagrees with it. If the label is correct, the disagreement is a real finding and belongs in the failure list in the README.
 
-Cases that Footnote currently gets **wrong** are especially valuable. A reproducible failure is more useful than another example it already handles.
+Cases it currently gets **wrong** are the most useful thing you could send me.
 
 ## Scope
 
-Footnote does one thing: decide whether a claim is supported by a corpus, and point at where. Things that fit well are better judges, better retrieval, more source formats and better reporting. Things that do not fit are generation, retrieval-augmented answering, and anything that turns this into a general document pipeline.
+Footnote does one thing: decide whether a claim is backed up by a set of documents, and point at where. Better judging, better retrieval, more file formats and better reports all fit. Generating text, doing retrieval-augmented question answering, or turning this into a general document pipeline don't.
 
 ## Style
 
-Line length 100, ruff for linting and formatting, `mypy --strict` with no new `Any` in public signatures. Comments should explain why a decision was made rather than restate what the code does.
+Line length 100, ruff for linting and formatting, `mypy --strict`. The code deliberately has no comments or docstrings outside the CLI and MCP server, where they're used to generate help text.
