@@ -4,9 +4,9 @@ import asyncio
 
 import pytest
 
-from footnote.corpus import load_text
-from footnote.mcp_server import _summarise
-from footnote.verify import check_documents
+from llmfeeder.corpus import load_text
+from llmfeeder.mcp_server import _summarise
+from llmfeeder.verify import check_documents
 
 SOURCE = "Free cash flow was 410 million dollars for the quarter."
 
@@ -48,14 +48,14 @@ class TestSummary:
 class TestServer:
     def test_server_builds_and_exposes_both_tools(self) -> None:
         pytest.importorskip("mcp")
-        from footnote.mcp_server import build_server
+        from llmfeeder.mcp_server import build_server
 
         tools = asyncio.run(build_server(".").list_tools())
         assert {t.name for t in tools} == {"verify_against_sources", "verify_against_text"}
 
     def test_every_tool_carries_a_description_and_a_schema(self) -> None:
         pytest.importorskip("mcp")
-        from footnote.mcp_server import build_server
+        from llmfeeder.mcp_server import build_server
 
         tools = asyncio.run(build_server(".").list_tools())
         for tool in tools:

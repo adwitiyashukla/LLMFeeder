@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from footnote.corpus import load_text
-from footnote.models import CheckResult
-from footnote.verify import check, check_documents
+from llmfeeder.corpus import load_text
+from llmfeeder.models import CheckResult
+from llmfeeder.verify import check, check_documents
 
 __all__ = ["build_server", "serve"]
 
@@ -46,7 +46,7 @@ def _summarise(result: CheckResult) -> dict[str, Any]:
 def build_server(default_sources: str = ".") -> Any:
     from mcp.server.fastmcp import FastMCP
 
-    server = FastMCP("footnote")
+    server = FastMCP("llmfeeder")
 
     @server.tool(description=_SOURCES_DESCRIPTION)
     def verify_against_sources(

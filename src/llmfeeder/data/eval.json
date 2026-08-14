@@ -1,5 +1,5 @@
 {
-  "name": "footnote-core",
+  "name": "llmfeeder-core",
   "version": 1,
   "description": "Hand-labelled claims for measuring verification quality. Each case pairs a short source corpus with claims written about it, spanning supported, partial, unsupported and contradicted. Contradictions deliberately include numeric, polarity and entity-substitution varieties so that the harness exposes what each judge can and cannot catch.",
   "cases": [

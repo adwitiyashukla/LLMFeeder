@@ -3,9 +3,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from footnote.models import Claim, ClaimResult, Document, Evidence, SourceSpan, Verdict
-from footnote.retrieve import Candidate, CorpusIndex
-from footnote.textutil import (
+from llmfeeder.models import Claim, ClaimResult, Document, Evidence, SourceSpan, Verdict
+from llmfeeder.retrieve import Candidate, CorpusIndex
+from llmfeeder.textutil import (
     NumericMention,
     Token,
     content_tokens,

@@ -1,11 +1,11 @@
-# Footnote
+# LLMFeeder
 
 **Checks whether AI-generated text is actually supported by your source documents, one claim at a time.**
 
-[![CI](https://github.com/adwitiyashukla/footnote/actions/workflows/ci.yml/badge.svg)](https://github.com/adwitiyashukla/footnote/actions/workflows/ci.yml)
+[![CI](https://github.com/adwitiyashukla/LLMFeeder/actions/workflows/ci.yml/badge.svg)](https://github.com/adwitiyashukla/LLMFeeder/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Live demo](https://img.shields.io/badge/demo-live%20report-4c8dff.svg)](https://adwitiyashukla.github.io/footnote/example-report.html)
+[![Live demo](https://img.shields.io/badge/demo-live%20report-4c8dff.svg)](https://adwitiyashukla.github.io/LLMFeeder/example-report.html)
 
 ## Why I built this
 
@@ -13,10 +13,10 @@ I kept running into the same annoying problem. I'd give a model a few PDFs and a
 
 So I wanted a tool that goes through the output sentence by sentence and tells me: this bit is in your sources and here's exactly where, this bit isn't, and this bit actually contradicts what your source says.
 
-That's what Footnote does.
+That's what LLMFeeder does.
 
 ```
-$ footnote check answer.md --sources ./reports
+$ llmfeeder check answer.md --sources ./reports
 
 claims needing attention
 CONTRADICTED   0.45  Free cash flow was 510 million dollars for the quarter.
@@ -34,7 +34,7 @@ faithfulness 0.73  (lexical judge, 1 source)
 
 Add `--report out.html` and you get a page where clicking a claim highlights the exact sentence it came from.
 
-### [Try the live example report](https://adwitiyashukla.github.io/footnote/example-report.html)
+### [Try the live example report](https://adwitiyashukla.github.io/LLMFeeder/example-report.html)
 
 Click any claim on the left, and the characters it rests on light up in the source on the right. Nothing to install.
 
@@ -65,36 +65,36 @@ There's one more thing I got wrong at first and had to go back and fix. If a cla
 Not on PyPI yet, so install it from here:
 
 ```bash
-pip install git+https://github.com/adwitiyashukla/footnote.git
+pip install git+https://github.com/adwitiyashukla/LLMFeeder.git
 ```
 
 Or clone it, which is easier if you want to poke at the code:
 
 ```bash
-git clone https://github.com/adwitiyashukla/footnote.git
-cd footnote
+git clone https://github.com/adwitiyashukla/LLMFeeder.git
+cd LLMFeeder
 pip install -e ".[all]"
 ```
 
-Needs Python 3.11 or newer. The command is `footnote`.
+Needs Python 3.11 or newer. The command is `llmfeeder`.
 
 Optional extras: `pdf` for PDF files, `mcp` for the Model Context Protocol server, `all` for both. Without them it still handles txt, markdown, HTML and JSON, and the only dependencies are `typer` and `rich`.
 
 ## Quickstart
 
 ```bash
-footnote demo --open                     # runs the built-in example and opens the report
+llmfeeder demo --open                     # runs the built-in example and opens the report
 
-footnote check answer.md --sources ./docs
-footnote check answer.md -s ./docs -s ./notes.pdf --report out.html --open
-echo "Revenue grew 34%." | footnote check - --sources ./docs
-footnote check answer.md -s ./docs --json results.json --quiet
+llmfeeder check answer.md --sources ./docs
+llmfeeder check answer.md -s ./docs -s ./notes.pdf --report out.html --open
+echo "Revenue grew 34%." | llmfeeder check - --sources ./docs
+llmfeeder check answer.md -s ./docs --json results.json --quiet
 ```
 
 You can also use it in a CI pipeline:
 
 ```bash
-footnote check generated-summary.md --sources ./source-of-truth --fail-under 0.9
+llmfeeder check generated-summary.md --sources ./source-of-truth --fail-under 0.9
 ```
 
 That exits with an error code if the score is too low, so a docs build can refuse to publish a page whose claims have drifted away from the source material.
@@ -118,7 +118,7 @@ text -> segment -> retrieve -> align -> judge -> verdicts + citations
 Unit tests tell you the code runs. They don't tell you whether the thing actually works. So I hand-labelled a small dataset and wrote a harness that scores the real pipeline against it.
 
 ```bash
-footnote eval                     # reproduces the numbers below
+llmfeeder eval                     # reproduces the numbers below
 ```
 
 **68 labelled claims across 8 source corpora, offline judge, no API key:**
@@ -165,7 +165,7 @@ The thing I was most careful about here: the model doesn't get to invent citatio
 
 ```bash
 cp .env.example .env        # add OPENAI_API_KEY or ANTHROPIC_API_KEY
-footnote check answer.md -s ./docs --judge llm --model gpt-4o-mini
+llmfeeder check answer.md -s ./docs --judge llm --model gpt-4o-mini
 ```
 
 It also prints a notice before it sends anything, so you know when your source text is about to leave your machine.
@@ -178,14 +178,14 @@ This lets an AI agent check its own output before showing it to you.
 
 ```bash
 pip install -e ".[mcp]"
-footnote mcp --sources ./docs
+llmfeeder mcp --sources ./docs
 ```
 
 ```jsonc
 // claude_desktop_config.json
 {
   "mcpServers": {
-    "footnote": { "command": "footnote", "args": ["mcp", "--sources", "/path/to/docs"] }
+    "llmfeeder": { "command": "llmfeeder", "args": ["mcp", "--sources", "/path/to/docs"] }
   }
 }
 ```
@@ -195,7 +195,7 @@ Two tools: `verify_against_sources` for a folder on disk, and `verify_against_te
 ## Using it from Python
 
 ```python
-from footnote import check, write_report
+from llmfeeder import check, write_report
 
 result = check("Revenue grew 34% to $2.1B.", ["./sources"])
 
@@ -217,10 +217,10 @@ One rule I stuck to everywhere: a `SourceSpan` is always a real character range 
 
 | Command | What it does |
 |---|---|
-| `footnote check TEXT -s SOURCES` | check a file, a string, or `-` for stdin |
-| `footnote eval` | run the evaluation harness |
-| `footnote demo` | run the built-in example |
-| `footnote mcp` | start the MCP server |
+| `llmfeeder check TEXT -s SOURCES` | check a file, a string, or `-` for stdin |
+| `llmfeeder eval` | run the evaluation harness |
+| `llmfeeder demo` | run the built-in example |
+| `llmfeeder mcp` | start the MCP server |
 
 Handy flags for `check`: `--report out.html`, `--json out.json`, `--open`, `--judge lexical|llm|auto`, `--threshold`, `--fail-under`, `--top-k`, `--verbose`, `--quiet`.
 
@@ -240,13 +240,13 @@ Being upfront about these:
 ## Running it locally
 
 ```bash
-git clone https://github.com/adwitiyashukla/footnote.git
-cd footnote
+git clone https://github.com/adwitiyashukla/LLMFeeder.git
+cd LLMFeeder
 pip install -e ".[all]"
 pip install pytest pytest-cov ruff mypy
 
 ruff check src tests && mypy && pytest
-footnote eval
+llmfeeder eval
 ```
 
 CI runs lint, `mypy --strict`, the tests and the eval harness on Python 3.11 and 3.12.

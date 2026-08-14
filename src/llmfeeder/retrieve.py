@@ -3,9 +3,9 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from footnote.models import Document
-from footnote.segment import split_sentences
-from footnote.textutil import Token, content_tokens
+from llmfeeder.models import Document
+from llmfeeder.segment import split_sentences
+from llmfeeder.textutil import Token, content_tokens
 
 __all__ = ["Candidate", "CorpusIndex"]
 

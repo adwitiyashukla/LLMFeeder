@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from footnote import Verdict, check_documents, render_report, write_report
-from footnote.corpus import load_text
-from footnote.evaluation import Metrics, demo_case, evaluate, load_dataset
-from footnote.models import CheckResult, SourceSpan
+from llmfeeder import Verdict, check_documents, render_report, write_report
+from llmfeeder.corpus import load_text
+from llmfeeder.evaluation import Metrics, demo_case, evaluate, load_dataset
+from llmfeeder.models import CheckResult, SourceSpan
 
 SOURCE = (
     "Acme reported revenue of 2.1 billion dollars for the third quarter.\n\n"

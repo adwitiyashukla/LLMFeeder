@@ -8,9 +8,9 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from footnote.judge.lexical import LexicalJudge
-from footnote.models import Claim, ClaimResult, Evidence, SourceSpan, Verdict
-from footnote.retrieve import Candidate, CorpusIndex
+from llmfeeder.judge.lexical import LexicalJudge
+from llmfeeder.models import Claim, ClaimResult, Evidence, SourceSpan, Verdict
+from llmfeeder.retrieve import Candidate, CorpusIndex
 
 __all__ = ["LLMJudge", "credential_available", "load_env_file", "resolve_credential"]
 
@@ -60,7 +60,7 @@ def _setting(name: str, env_file: str | Path = ".env") -> str | None:
 def resolve_credential(env_file: str | Path = ".env") -> tuple[str, str, str] | None:
     anthropic = _setting("ANTHROPIC_API_KEY", env_file)
     openai = _setting("OPENAI_API_KEY", env_file)
-    base = _setting("FOOTNOTE_BASE_URL", env_file)
+    base = _setting("LLMFEEDER_BASE_URL", env_file)
 
     if openai:
         return ("openai", openai, base or "https://api.openai.com/v1")
@@ -118,7 +118,7 @@ class LLMJudge:
         self.partial = partial
         self.env_file = env_file
         self.timeout = timeout
-        self._model_override = model or _setting("FOOTNOTE_MODEL", env_file)
+        self._model_override = model or _setting("LLMFEEDER_MODEL", env_file)
 
     def bind(self, index: CorpusIndex) -> None:
         self.fallback.bind(index)

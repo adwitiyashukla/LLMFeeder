@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from footnote.corpus import LoaderError, load_corpus, load_document, load_text
-from footnote.segment import segment, split_sentences
+from llmfeeder.corpus import LoaderError, load_corpus, load_document, load_text
+from llmfeeder.segment import segment, split_sentences
 
 
 class TestSegment:

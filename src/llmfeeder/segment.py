@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from footnote.models import Claim
+from llmfeeder.models import Claim
 
 __all__ = ["segment", "split_sentences"]
 

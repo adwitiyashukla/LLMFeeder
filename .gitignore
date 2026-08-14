@@ -25,7 +25,7 @@ coverage.xml
 *.swp
 .DS_Store
 
-footnote-report.html
+llmfeeder-report.html
 *-report.html
 !docs/example-report.html
 

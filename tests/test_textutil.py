@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from footnote.textutil import (
+from llmfeeder.textutil import (
     content_tokens,
     extract_numbers,
     has_negation,

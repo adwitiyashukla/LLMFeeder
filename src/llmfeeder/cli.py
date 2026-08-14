@@ -11,11 +11,11 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from footnote import __version__
-from footnote.models import CheckResult, Verdict
+from llmfeeder import __version__
+from llmfeeder.models import CheckResult, Verdict
 
 app = typer.Typer(
-    name="footnote",
+    name="llmfeeder",
     help="Check whether generated text is actually supported by your sources.",
     no_args_is_help=True,
     add_completion=False,
@@ -33,7 +33,7 @@ _STYLE = {
 
 def _version_callback(value: bool) -> None:
     if value:
-        console.print(f"footnote {__version__}")
+        console.print(f"LLMFeeder {__version__}")
         raise typer.Exit()
 
 
@@ -52,9 +52,9 @@ def main(
     pass
 
 
-@app.command(help="Print the Footnote version.")
+@app.command(help="Print the LLMFeeder version.")
 def version() -> None:
-    console.print(f"footnote {__version__}")
+    console.print(f"LLMFeeder {__version__}")
 
 
 def _read_answer(answer: str) -> str:
@@ -160,7 +160,7 @@ def check(
         bool, typer.Option("--quiet", "-q", help="Print only the faithfulness score.")
     ] = False,
 ) -> None:
-    from footnote.verify import check as run_check
+    from llmfeeder.verify import check as run_check
 
     text = _read_answer(answer)
     if not text.strip():
@@ -184,7 +184,7 @@ def check(
         _render(result, verbose=verbose)
 
     if report:
-        from footnote.report import write_report
+        from llmfeeder.report import write_report
 
         written = write_report(result, report)
         if not quiet:
@@ -219,8 +219,8 @@ def evaluate(
     ] = "",
     model: Annotated[str, typer.Option("--model", help="Model for the LLM judge.")] = "",
 ) -> None:
-    from footnote.evaluation import evaluate as run_eval
-    from footnote.evaluation import load_dataset, render_metrics
+    from llmfeeder.evaluation import evaluate as run_eval
+    from llmfeeder.evaluation import load_dataset, render_metrics
 
     examples = load_dataset(dataset or None)
     console.print(f"evaluating [bold]{judge}[/bold] judge on {len(examples)} labelled claims...")
@@ -240,7 +240,7 @@ def mcp(
     ] = ".",
 ) -> None:
     try:
-        from footnote.mcp_server import serve
+        from llmfeeder.mcp_server import serve
     except ImportError as exc:
         err.print(
             "[red]the MCP server needs an extra.[/red] From a checkout: pip install -e '.[mcp]'"
@@ -253,17 +253,17 @@ def mcp(
 def demo(
     report: Annotated[
         str, typer.Option("--report", "-r", help="Where to write the demo report.")
-    ] = "footnote-report.html",
+    ] = "llmfeeder-report.html",
     open_report: Annotated[bool, typer.Option("--open", help="Open it in a browser.")] = False,
 ) -> None:
-    from footnote.evaluation import demo_case
-    from footnote.report import write_report
-    from footnote.verify import check_documents
+    from llmfeeder.evaluation import demo_case
+    from llmfeeder.report import write_report
+    from llmfeeder.verify import check_documents
 
     answer, documents = demo_case()
     result = check_documents(answer, documents, judge="lexical")
     _render(result, verbose=True)
-    written = write_report(result, report, title="Footnote demo report")
+    written = write_report(result, report, title="LLMFeeder demo report")
     console.print(f"report [cyan]{written}[/cyan]")
     if open_report:
         webbrowser.open(written.resolve().as_uri())

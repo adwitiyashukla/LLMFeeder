@@ -1,5 +1,5 @@
 [project]
-name = "footnote-verify"
+name = "llmfeeder"
 version = "0.1.0"
 description = "Catches AI hallucinations by checking every claim against your sources, with character-exact citations. Offline by default, no API key required."
 readme = "README.md"
@@ -32,9 +32,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/adwitiyashukla/footnote"
-Repository = "https://github.com/adwitiyashukla/footnote"
-Issues = "https://github.com/adwitiyashukla/footnote/issues"
+Homepage = "https://github.com/adwitiyashukla/LLMFeeder"
+Repository = "https://github.com/adwitiyashukla/LLMFeeder"
+Issues = "https://github.com/adwitiyashukla/LLMFeeder/issues"
 
 [project.optional-dependencies]
 pdf = ["pdfplumber>=0.11"]
@@ -42,7 +42,7 @@ mcp = ["mcp>=1.2,<2"]
 all = ["pdfplumber>=0.11", "mcp>=1.2,<2"]
 
 [project.scripts]
-footnote = "footnote.cli:app"
+llmfeeder = "llmfeeder.cli:app"
 
 [dependency-groups]
 dev = [
@@ -57,10 +57,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/footnote"]
+packages = ["src/llmfeeder"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/footnote", "tests", "README.md", "LICENSE"]
+include = ["src/llmfeeder", "tests", "README.md", "LICENSE"]
 
 [tool.ruff]
 line-length = 100
@@ -71,12 +71,12 @@ src = ["src", "tests"]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
-"src/footnote/report.py" = ["E501"]
+"src/llmfeeder/report.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.11"
 strict = true
-files = ["src/footnote"]
+files = ["src/llmfeeder"]
 
 [[tool.mypy.overrides]]
 module = ["pdfplumber", "mcp", "mcp.server.fastmcp"]
@@ -87,7 +87,7 @@ testpaths = ["tests"]
 addopts = "-q"
 
 [tool.coverage.run]
-source = ["src/footnote"]
+source = ["src/llmfeeder"]
 
 [tool.coverage.report]
 show_missing = true

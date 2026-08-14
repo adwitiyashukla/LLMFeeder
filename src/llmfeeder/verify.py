@@ -4,11 +4,11 @@ from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import Any
 
-from footnote.corpus import load_corpus, load_text
-from footnote.judge import Judge, resolve_judge
-from footnote.models import CheckResult, Document
-from footnote.retrieve import CorpusIndex
-from footnote.segment import segment
+from llmfeeder.corpus import load_corpus, load_text
+from llmfeeder.judge import Judge, resolve_judge
+from llmfeeder.models import CheckResult, Document
+from llmfeeder.retrieve import CorpusIndex
+from llmfeeder.segment import segment
 
 __all__ = ["check", "check_documents", "check_files"]
 

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-from footnote import Verdict, check_documents
-from footnote.corpus import load_text
-from footnote.judge.lexical import LexicalJudge
-from footnote.models import CheckResult, Document
-from footnote.retrieve import CorpusIndex
-from footnote.segment import segment
+from llmfeeder import Verdict, check_documents
+from llmfeeder.corpus import load_text
+from llmfeeder.judge.lexical import LexicalJudge
+from llmfeeder.models import CheckResult, Document
+from llmfeeder.retrieve import CorpusIndex
+from llmfeeder.segment import segment
 
 SOURCE = (
     "Acme reported revenue of 2.1 billion dollars for the third quarter, "
@@ -139,7 +139,7 @@ class TestJudgeConfiguration:
             LexicalJudge(supported=0.4, partial=0.9)
 
     def test_unknown_judge_name_is_rejected(self, corpus: list[Document]) -> None:
-        from footnote.judge import resolve_judge
+        from llmfeeder.judge import resolve_judge
 
         with pytest.raises(ValueError, match="unknown judge"):
             resolve_judge("telepathy")

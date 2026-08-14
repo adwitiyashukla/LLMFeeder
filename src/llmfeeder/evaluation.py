@@ -6,7 +6,7 @@ from importlib.resources import files
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from footnote.models import Document, Verdict
+from llmfeeder.models import Document, Verdict
 
 if TYPE_CHECKING:
     from rich.console import Console
@@ -39,7 +39,7 @@ def _documents(raw: dict[str, Any], case: str) -> tuple[Document, ...]:
 
 
 def _bundled_path() -> Path:
-    return Path(str(files("footnote").joinpath("data/eval.json")))
+    return Path(str(files("llmfeeder").joinpath("data/eval.json")))
 
 
 def load_dataset(path: str | Path | None = None) -> list[EvalExample]:
@@ -165,7 +165,7 @@ def evaluate(
     judge: str = "lexical",
     model: str | None = None,
 ) -> Metrics:
-    from footnote.verify import check_documents
+    from llmfeeder.verify import check_documents
 
     metrics = Metrics(judge=judge)
     resolved_name = judge

@@ -6,7 +6,7 @@ from collections.abc import Iterable, Iterator
 from html.parser import HTMLParser
 from pathlib import Path
 
-from footnote.models import Document
+from llmfeeder.models import Document
 
 __all__ = ["SUPPORTED_SUFFIXES", "LoaderError", "load_corpus", "load_document", "load_text"]
 
