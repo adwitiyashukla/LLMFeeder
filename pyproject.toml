@@ -35,15 +35,11 @@ dependencies = [
 Homepage = "https://github.com/adwitiyashukla/footnote"
 Repository = "https://github.com/adwitiyashukla/footnote"
 Issues = "https://github.com/adwitiyashukla/footnote/issues"
-Changelog = "https://github.com/adwitiyashukla/footnote/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-# PDF sources. Everything else parses with the standard library only.
 pdf = ["pdfplumber>=0.11"]
-# Model Context Protocol server, so agents can verify their own output.
-mcp = ["mcp>=1.2"]
-# Convenience bundle.
-all = ["pdfplumber>=0.11", "mcp>=1.2"]
+mcp = ["mcp>=1.2,<2"]
+all = ["pdfplumber>=0.11", "mcp>=1.2,<2"]
 
 [project.scripts]
 footnote = "footnote.cli:app"
@@ -64,7 +60,7 @@ build-backend = "hatchling.build"
 packages = ["src/footnote"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/footnote", "tests", "README.md", "LICENSE", "CHANGELOG.md"]
+include = ["src/footnote", "tests", "README.md", "LICENSE"]
 
 [tool.ruff]
 line-length = 100
@@ -73,14 +69,8 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
-# RUF001 flags "ambiguous" Unicode characters in strings. The tokeniser and sentence
-# splitter deliberately match curly quotation marks, because real text is full of
-# them and a claim written with a typographic apostrophe has to tokenise the same way
-# as one written with a straight apostrophe. The report also uses arrow glyphs.
-ignore = ["RUF001"]
 
 [tool.ruff.lint.per-file-ignores]
-# The report module embeds HTML and CSS template strings that exceed the line length.
 "src/footnote/report.py" = ["E501"]
 
 [tool.mypy]
@@ -92,14 +82,6 @@ files = ["src/footnote"]
 module = ["pdfplumber", "mcp", "mcp.server.fastmcp"]
 ignore_missing_imports = true
 
-# FastMCP's @tool() decorator is untyped, so strict mode reports every tool it
-# registers as an untyped function. The tool bodies themselves are fully annotated
-# and checked; only the decorator is opaque, so the error is suppressed here rather
-# than weakening the annotations.
-[[tool.mypy.overrides]]
-module = ["footnote.mcp_server"]
-disable_error_code = ["untyped-decorator"]
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
@@ -109,3 +91,9 @@ source = ["src/footnote"]
 
 [tool.coverage.report]
 show_missing = true
+exclude_also = [
+    "if __name__ == .__main__.:",
+    "except ImportError",
+    "except PackageNotFoundError",
+    "def serve",
+]

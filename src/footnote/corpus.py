@@ -81,7 +81,7 @@ _BLANK_RUN = re.compile(r"\n{3,}")
 
 
 def _normalise(text: str) -> str:
-    text = text.replace("\r\n", "\n").replace("\r", "\n").replace(" ", " ")
+    text = text.replace("\r\n", "\n").replace("\r", "\n").replace("\u00a0", " ")
     text = _WS_RUN.sub(" ", text)
     text = _BLANK_RUN.sub("\n\n", text)
     return text.strip()
@@ -170,7 +170,7 @@ def _read_json(raw: str, suffix: str) -> str:
 def _read_pdf(path: Path) -> tuple[str, tuple[tuple[int, int], ...]]:
     try:
         import pdfplumber
-    except ImportError as exc:  # pragma: no cover - depends on the install extras
+    except ImportError as exc:
         raise LoaderError(
             "PDF support needs an extra. From a checkout: pip install -e '.[pdf]'"
         ) from exc

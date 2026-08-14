@@ -80,10 +80,10 @@ _ABBREVIATIONS: frozenset[str] = frozenset(
     ]
 )
 
-_SENTENCE_END = re.compile(r"([.!?]+)([\"'’”)\]]*)(\s+|$)")
-_WORD_BEFORE = re.compile(r"([A-Za-z0-9.'’-]+)$")
+_SENTENCE_END = re.compile(r"([.!?]+)([\"'\u2019\u201d)\]]*)(\s+|$)")
+_WORD_BEFORE = re.compile(r"([A-Za-z0-9.'\u2019-]+)$")
 
-_BULLET = re.compile(r"^\s*(?:[-*+•]|\(?\d{1,2}[.)])\s+")
+_BULLET = re.compile(r"^\s*(?:[-*+\u2022]|\(?\d{1,2}[.)])\s+")
 _HEADING = re.compile(r"^\s*#{1,6}\s+")
 _RULE = re.compile(r"^\s*(?:[-*_=]{3,}|\|[\s|:-]*\|)\s*$")
 _TABLE_ROW = re.compile(r"^\s*\|")

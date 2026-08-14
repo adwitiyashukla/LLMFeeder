@@ -68,11 +68,9 @@ main { display: grid; grid-template-columns: minmax(340px, 42%) 1fr; min-height:
 .doc { margin-bottom: 22px; }
 .doc > summary {
   cursor: pointer; color: var(--muted); font-size: 12.5px; padding: 7px 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; list-style: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
-.doc > summary::-webkit-details-marker { display: none; }
-.doc > summary::before { content: "▸ "; color: var(--faint); }
-.doc[open] > summary::before { content: "▾ "; }
+.doc > summary::marker { color: var(--faint); }
 .body {
   white-space: pre-wrap; word-wrap: break-word; font-size: 13.5px; line-height: 1.75;
   color: #c3c9d6; background: var(--panel); border: 1px solid var(--line);
@@ -104,12 +102,12 @@ footer { padding: 16px 32px; border-top: 1px solid var(--line); color: var(--fai
 <header>
   <h1>Footnote demo report <span>/ claim-level source verification</span></h1>
   <div class="sub">9 claims checked against 1 source
-    document &middot; generated 2026-08-04 00:15 UTC</div>
+    document, generated 2026-08-14 13:39 UTC</div>
   <div class="metrics"><div class="metric score"><div class="k">Faithfulness</div><div class="v">0.73</div></div><div class="metric"><div class="k">Claims</div><div class="v">9</div></div><div class="metric"><div class="k">Supported</div><div class="v">6</div></div><div class="metric"><div class="k">Partial</div><div class="v">0</div></div><div class="metric"><div class="k">Unsupported</div><div class="v">1</div></div><div class="metric"><div class="k">Contradicted</div><div class="v">2</div></div><div class="metric"><div class="k">Judge</div><div class="v">lexical</div></div></div><div class="bar"><i style="width:66.6667%;background:var(--supported)"></i><i style="width:11.1111%;background:var(--unsupported)"></i><i style="width:22.2222%;background:var(--contradicted)"></i></div>
 </header>
 <main>
   <section class="pane claims">
-    <h2>Claims &middot; click to locate, or press j and k</h2>
+    <h2>Claims, click to locate, or press j and k</h2>
     
     <div class="claim supported" data-claim="c1"><div class="top"><span class="tag supported">Supported</span><span class="score">1.00</span></div><div class="text">Revenue for the quarter was 2.1 billion dollars, an increase of 34 percent year over year.</div><div class="why">every content term is present in the cited passage</div><div class="cite">q3-earnings.txt chars 40-155</div></div>
 <div class="claim supported" data-claim="c2"><div class="top"><span class="tag supported">Supported</span><span class="score">1.00</span></div><div class="text">Growth was strongest in the EMEA region, which grew 51 percent year over year.</div><div class="why">every content term is present in the cited passage</div><div class="cite">q3-earnings.txt chars 157-224</div></div>
@@ -122,7 +120,7 @@ footer { padding: 16px 32px; border-top: 1px solid var(--line); color: var(--fai
 <div class="claim unsupported" data-claim="c9"><div class="top"><span class="tag unsupported">Unsupported</span><span class="score">0.14</span></div><div class="text">The company announced a quarterly dividend of 12 cents per share.</div><div class="why">no passage accounts for the claim; unaccounted terms: announc, cent, dividend, per, quarter</div><div class="cite">q3-earnings.txt chars 571-724</div></div>
   </section>
   <section class="pane sources">
-    <h2>Sources &middot; highlighted spans are the cited evidence</h2>
+    <h2>Sources, highlighted spans are the cited evidence</h2>
     <details class="doc" open><summary>q3-earnings.txt (5 citations)</summary><div class="body">Acme Corporation Third Quarter Results. <mark class="supported" data-claims="c1">Revenue for the quarter was 2.1 billion dollars, an increase of 34 percent compared with the same quarter last year</mark>. <mark class="supported" data-claims="c2">Growth was strongest in the EMEA region, which grew 51 percent year</mark> over year and now accounts for 28 percent of total revenue.
 
 <mark class="supported" data-claims="c3">Operating margin was 18.4 percent, down from 19.1 percent in the prior year quarter</mark>, reflecting increased investment in the company&#x27;s data <mark class="contradicted" data-claims="c8 c7 c9 c5 c4">centre footprint. The company opened two new data centres during the quarter, in Dublin and in Singapore.

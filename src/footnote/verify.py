@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from pathlib import Path
+from typing import Any
 
 from footnote.corpus import load_corpus, load_text
 from footnote.judge import Judge, resolve_judge
@@ -85,7 +86,7 @@ def check(
 def check_files(
     answer_path: str | Path,
     sources: Iterable[str | Path],
-    **kwargs: object,
+    **kwargs: Any,
 ) -> CheckResult:
     text = load_text(Path(answer_path).read_text(encoding="utf-8", errors="replace")).text
-    return check(text, sources, **kwargs)  # type: ignore[arg-type]
+    return check(text, sources, **kwargs)

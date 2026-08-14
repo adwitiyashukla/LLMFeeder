@@ -84,19 +84,19 @@ class TestVerdicts:
 class TestCitations:
     def test_span_offsets_resolve_in_the_source(self, corpus: list[Document]) -> None:
         result = verdict_for("Free cash flow was 410 million dollars.", corpus)
-        span = result.claims[0].best.span  # type: ignore[union-attr]
+        span = result.claims[0].best.span
         assert corpus[0].text[span.start : span.end] == span.text
         assert span.text.strip()
 
     def test_locator_is_human_readable(self, corpus: list[Document]) -> None:
         result = verdict_for("Free cash flow was 410 million dollars.", corpus)
-        assert "report.txt" in result.claims[0].best.span.locator()  # type: ignore[union-attr]
+        assert "report.txt" in result.claims[0].best.span.locator()
 
     def test_evidence_is_ordered_with_the_citation_first(self, corpus: list[Document]) -> None:
         result = verdict_for("Acme reported revenue of 2.1 billion dollars.", corpus)
         evidence = result.claims[0].evidence
         assert evidence
-        assert evidence[0].span == result.claims[0].best.span  # type: ignore[union-attr]
+        assert evidence[0].span == result.claims[0].best.span
 
 
 class TestAggregate:

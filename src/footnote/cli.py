@@ -1,11 +1,3 @@
-"""Command line interface.
-
-Designed to be usable two ways: read by a person at a terminal, and read by a CI
-job. ``--fail-under`` turns the faithfulness score into an exit code, so a
-documentation build or a generated report can be gated on whether its claims still
-match the sources it was written from.
-"""
-
 from __future__ import annotations
 
 import json
@@ -57,17 +49,15 @@ def main(
         ),
     ] = False,
 ) -> None:
-    """Footnote: claim-level source verification for generated text."""
+    pass
 
 
-@app.command()
+@app.command(help="Print the Footnote version.")
 def version() -> None:
-    """Print the Footnote version."""
     console.print(f"footnote {__version__}")
 
 
 def _read_answer(answer: str) -> str:
-    """Accept a file path, a literal string, or ``-`` for standard input."""
     if answer == "-":
         return sys.stdin.read()
     path = Path(answer)
@@ -118,7 +108,7 @@ def _render(result: CheckResult, *, verbose: bool) -> None:
     )
 
 
-@app.command()
+@app.command(help="Verify a piece of text against a corpus of sources.")
 def check(
     answer: Annotated[
         str,
@@ -170,7 +160,6 @@ def check(
         bool, typer.Option("--quiet", "-q", help="Print only the faithfulness score.")
     ] = False,
 ) -> None:
-    """Verify a piece of text against a corpus of sources."""
     from footnote.verify import check as run_check
 
     text = _read_answer(answer)
@@ -216,7 +205,7 @@ def check(
         raise typer.Exit(code=1)
 
 
-@app.command(name="eval")
+@app.command(name="eval", help="Measure verification quality against a labelled dataset.")
 def evaluate(
     judge: Annotated[str, typer.Option("--judge", "-j", help="lexical, llm, or auto.")] = "lexical",
     dataset: Annotated[
@@ -230,7 +219,6 @@ def evaluate(
     ] = "",
     model: Annotated[str, typer.Option("--model", help="Model for the LLM judge.")] = "",
 ) -> None:
-    """Measure verification quality against a labelled dataset."""
     from footnote.evaluation import evaluate as run_eval
     from footnote.evaluation import load_dataset, render_metrics
 
@@ -244,17 +232,16 @@ def evaluate(
         console.print(f"json   [cyan]{json_out}[/cyan]")
 
 
-@app.command()
+@app.command(help="Run the Model Context Protocol server on stdio.")
 def mcp(
     sources: Annotated[
         str,
         typer.Option("--sources", "-s", help="Default source directory for the tools."),
     ] = ".",
 ) -> None:
-    """Run the Model Context Protocol server on stdio."""
     try:
         from footnote.mcp_server import serve
-    except ImportError as exc:  # pragma: no cover - depends on the install extras
+    except ImportError as exc:
         err.print(
             "[red]the MCP server needs an extra.[/red] From a checkout: pip install -e '.[mcp]'"
         )
@@ -262,18 +249,13 @@ def mcp(
     serve(default_sources=sources)
 
 
-@app.command()
+@app.command(help="Run the bundled example end to end and write a report.")
 def demo(
     report: Annotated[
         str, typer.Option("--report", "-r", help="Where to write the demo report.")
     ] = "footnote-report.html",
     open_report: Annotated[bool, typer.Option("--open", help="Open it in a browser.")] = False,
 ) -> None:
-    """Run the bundled example end to end and write a report.
-
-    A zero-argument way to see what the tool does, and the command that generates
-    the example report committed in the repository.
-    """
     from footnote.evaluation import demo_case
     from footnote.report import write_report
     from footnote.verify import check_documents
@@ -287,5 +269,5 @@ def demo(
         webbrowser.open(written.resolve().as_uri())
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":
     app()

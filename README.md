@@ -102,7 +102,7 @@ That exits with an error code if the score is too low, so a docs build can refus
 ## How it works
 
 ```
-text ──▶ segment ──▶ retrieve ──▶ align ──▶ judge ──▶ verdicts + citations
+text -> segment -> retrieve -> align -> judge -> verdicts + citations
 ```
 
 **Segment.** Split the text into individual claims. This was fiddlier than I expected. You can't just split on full stops, because `Oct. 2025` and `3.5 percent` break. I also skip headings, questions, code blocks and short fragments, since those don't actually claim anything and scoring them just adds noise to the final number.

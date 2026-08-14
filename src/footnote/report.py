@@ -81,11 +81,9 @@ main { display: grid; grid-template-columns: minmax(340px, 42%) 1fr; min-height:
 .doc { margin-bottom: 22px; }
 .doc > summary {
   cursor: pointer; color: var(--muted); font-size: 12.5px; padding: 7px 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; list-style: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
-.doc > summary::-webkit-details-marker { display: none; }
-.doc > summary::before { content: "▸ "; color: var(--faint); }
-.doc[open] > summary::before { content: "▾ "; }
+.doc > summary::marker { color: var(--faint); }
 .body {
   white-space: pre-wrap; word-wrap: break-word; font-size: 13.5px; line-height: 1.75;
   color: #c3c9d6; background: var(--panel); border: 1px solid var(--line);
@@ -287,17 +285,17 @@ def render_report(result: CheckResult, *, title: str = "Footnote report") -> str
 <header>
   <h1>{html.escape(title)} <span>/ claim-level source verification</span></h1>
   <div class="sub">{len(result.claims)} claims checked against {docs} source
-    {"document" if docs == 1 else "documents"} &middot; generated {generated}</div>
+    {"document" if docs == 1 else "documents"}, generated {generated}</div>
   {_metrics_html(result)}
 </header>
 <main>
   <section class="pane claims">
-    <h2>Claims &middot; click to locate, or press j and k</h2>
+    <h2>Claims, click to locate, or press j and k</h2>
     {warnings}
     {_claims_html(result)}
   </section>
   <section class="pane sources">
-    <h2>Sources &middot; highlighted spans are the cited evidence</h2>
+    <h2>Sources, highlighted spans are the cited evidence</h2>
     {_sources_html(result)}
   </section>
 </main>

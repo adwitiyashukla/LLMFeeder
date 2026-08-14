@@ -164,7 +164,7 @@ NEGATIONS: frozenset[str] = frozenset(
     ]
 )
 
-_TOKEN_RE = re.compile(r"[A-Za-z0-9]+(?:['’\-.][A-Za-z0-9]+)*")
+_TOKEN_RE = re.compile(r"[A-Za-z0-9]+(?:['\u2019\-.][A-Za-z0-9]+)*")
 
 _WORD_NUMBERS: dict[str, float] = {
     "two": 2,
@@ -302,7 +302,7 @@ _MAGNITUDES: dict[str, float] = {
 
 _NUMBER_RE = re.compile(
     r"""
-    (?P<currency>[$£€¥])?\s?
+    (?P<currency>[$\u00a3\u20ac\u00a5])?\s?
     (?P<value>\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)
     \s?
     (?P<magnitude>hundred|thousand|million|billion|trillion|[kKmMbBtT]n?\b)?
@@ -378,7 +378,7 @@ def extract_numbers(text: str, *, offset: int = 0) -> list[NumericMention]:
             continue
         try:
             value = float(digits.replace(",", ""))
-        except ValueError:  # pragma: no cover - the pattern guarantees a number
+        except ValueError:
             continue
 
         magnitude = (m.group("magnitude") or "").strip().lower()

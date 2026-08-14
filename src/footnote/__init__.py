@@ -19,7 +19,7 @@ from footnote.verify import check, check_documents, check_files
 
 try:
     __version__ = version("footnote-verify")
-except PackageNotFoundError:  # pragma: no cover - source checkout without an install
+except PackageNotFoundError:
     __version__ = "0.0.0+unknown"
 
 __all__ = [
