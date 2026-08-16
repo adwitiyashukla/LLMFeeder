@@ -1,19 +1,26 @@
 # LLMFeeder
 
-**Checks whether AI-generated text is actually supported by your source documents, one claim at a time.**
+Checks whether AI-generated text is actually supported by your source documents, one claim at a time.
 
 [![CI](https://github.com/adwitiyashukla/LLMFeeder/actions/workflows/ci.yml/badge.svg)](https://github.com/adwitiyashukla/LLMFeeder/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Live demo](https://img.shields.io/badge/demo-live%20report-4c8dff.svg)](https://adwitiyashukla.github.io/LLMFeeder/example-report.html)
 
-## Why I built this
+## Why I did not use embeddings
 
-I kept running into the same annoying problem. I'd give a model a few PDFs and ask it to summarise them, and I'd get back a paragraph that *looked* completely fine. Some of it was really in the documents. Some of it wasn't. And there was no way to tell which was which without going back and re-reading everything myself, which defeats the whole point.
+The obvious way to build this is to embed the claim, embed the source passage, and call anything above a similarity threshold supported. It demos well. I got about a day into it before I tried these two sentences:
 
-So I wanted a tool that goes through the output sentence by sentence and tells me: this bit is in your sources and here's exactly where, this bit isn't, and this bit actually contradicts what your source says.
+> Free cash flow was 410 million dollars.
+> Free cash flow was 510 million dollars.
 
-That's what LLMFeeder does.
+As strings they are nearly identical, and their embeddings are nearly identical too. Any threshold you pick says the second one is fine. It isn't fine, and a wrong number is probably the most common way an AI summary goes bad. The one error I most wanted to catch was the one similarity is worst at seeing.
+
+So the tool does not compare text at all when there is a number involved. It parses numbers into actual values and compares those. `$2.1B`, `2.1 billion` and `2,100,000,000` all become the same value. `34%` and `34 percent` keep the same unit. `three participants` gets compared against `two participants`. Years and ordinals get ignored, because "in 2021" and "the 12th minute" locate a statement rather than measure anything.
+
+That decision is the reason the rest of the project looks the way it does.
+
+## What it looks like
 
 ```
 $ llmfeeder check answer.md --sources ./reports
@@ -32,72 +39,11 @@ UNSUPPORTED    0.14  The company announced a quarterly dividend of 12 cents per 
 faithfulness 0.73  (lexical judge, 1 source)
 ```
 
-Add `--report out.html` and you get a page where clicking a claim highlights the exact sentence it came from.
+Add `--report out.html` and you get a page where clicking a claim lights up the exact characters it rests on.
 
 ### [Try the live example report](https://adwitiyashukla.github.io/LLMFeeder/example-report.html)
 
-Click any claim on the left, and the characters it rests on light up in the source on the right. Nothing to install.
-
-## The bit I found most interesting
-
-My first instinct was to just compare the claim and the source passage with embeddings and call anything above a threshold "supported". Then I tried it on these two sentences:
-
-> Free cash flow was 410 million dollars.
-> Free cash flow was 510 million dollars.
-
-They're basically identical as strings, and their embeddings are nearly identical too. So a similarity threshold says the second one is fine. But it's wrong, and a wrong number is probably the most common way an AI summary goes bad.
-
-So instead of comparing text, I parse the numbers into actual values and compare those. `$2.1B`, `2.1 billion` and `2,100,000,000` all become the same number. `34%` and `34 percent` keep the same unit. `three participants` gets compared against `two participants`.
-
-I also ended up splitting the "this is wrong" case into two, because they turned out to need different fixes:
-
-| Verdict | What it means | What you'd do |
-|---|---|---|
-| `SUPPORTED` | it's all there in the source | nothing |
-| `PARTIAL` | part of it is backed up, the rest isn't mentioned | soften or cut the extra bit |
-| `UNSUPPORTED` | nothing in the sources is about this at all | find a source or delete it |
-| `CONTRADICTED` | a passage says something incompatible | fix it, your source disagrees |
-
-There's one more thing I got wrong at first and had to go back and fix. If a claim says "six new bus stations" and the source never gives a station count anywhere, my first version called that a contradiction. It isn't. The source is just silent. So now a number only counts as contradicted if the passage actually offers a comparable number, which I decide by checking whether the two numbers share a nearby word. That change is in the commit history if you want to see it.
-
-## Install
-
-Not on PyPI yet, so install it from here:
-
-```bash
-pip install git+https://github.com/adwitiyashukla/LLMFeeder.git
-```
-
-Or clone it, which is easier if you want to poke at the code:
-
-```bash
-git clone https://github.com/adwitiyashukla/LLMFeeder.git
-cd LLMFeeder
-pip install -e ".[all]"
-```
-
-Needs Python 3.11 or newer. The command is `llmfeeder`.
-
-Optional extras: `pdf` for PDF files, `mcp` for the Model Context Protocol server, `all` for both. Without them it still handles txt, markdown, HTML and JSON, and the only dependencies are `typer` and `rich`.
-
-## Quickstart
-
-```bash
-llmfeeder demo --open                     # runs the built-in example and opens the report
-
-llmfeeder check answer.md --sources ./docs
-llmfeeder check answer.md -s ./docs -s ./notes.pdf --report out.html --open
-echo "Revenue grew 34%." | llmfeeder check - --sources ./docs
-llmfeeder check answer.md -s ./docs --json results.json --quiet
-```
-
-You can also use it in a CI pipeline:
-
-```bash
-llmfeeder check generated-summary.md --sources ./source-of-truth --fail-under 0.9
-```
-
-That exits with an error code if the score is too low, so a docs build can refuse to publish a page whose claims have drifted away from the source material.
+That page is generated by `llmfeeder demo` and committed to the repo, so it is the real output and not a mockup. Nothing to install.
 
 ## How it works
 
@@ -105,76 +51,136 @@ That exits with an error code if the score is too low, so a docs build can refus
 text -> segment -> retrieve -> align -> judge -> verdicts + citations
 ```
 
-**Segment.** Split the text into individual claims. This was fiddlier than I expected. You can't just split on full stops, because `Oct. 2025` and `3.5 percent` break. I also skip headings, questions, code blocks and short fragments, since those don't actually claim anything and scoring them just adds noise to the final number.
+### Segment
 
-**Retrieve.** Index the source documents by sentence, then build candidate windows of one to three sentences so a claim that spans a sentence break can still match. Windows are ranked by IDF-weighted overlap with the claim's words, so rare, specific words count more than common ones. I care much more about recall than precision here, because if the right passage never gets retrieved then the claim gets marked unsupported no matter how good the rest of the pipeline is.
+Split the text into individual claims. This was fiddlier than I expected. You cannot split on full stops, because `Oct. 2025` and `3.5 percent` break immediately. I keep a list of abbreviations, treat a digit either side of a dot as a decimal, and skip headings, questions, code blocks and short fragments, since none of those assert anything and scoring them only adds noise to the final number.
 
-**Align.** Narrow the winning window down to the smallest character range that still covers the matched words. This is the bit that turns "somewhere on page 4" into offsets you can actually highlight.
+### Retrieve
 
-**Judge.** Combine the word overlap with two checks that similarity can't do: reconcile the numbers by value, and compare polarity so a flipped negation gets caught.
+Index the sources by sentence, then build candidate windows of one to three sentences so a claim spanning a sentence break can still match. Windows are ranked by IDF-weighted word overlap, so rare words count more than common ones. I tuned this for recall rather than precision, because a passage that never gets retrieved means the claim is marked unsupported no matter how good the judging is.
 
-## Results
+### Align
 
-Unit tests tell you the code runs. They don't tell you whether the thing actually works. So I hand-labelled a small dataset and wrote a harness that scores the real pipeline against it.
+Narrow the winning window down to the smallest character range that still covers the matched words. This is the step that turns "somewhere on page 4" into offsets you can highlight.
+
+### Judge
+
+Combine word overlap with the two checks similarity cannot do: reconcile numbers by value, and compare polarity so a flipped negation gets caught.
+
+## The four verdicts
+
+I started with supported and not supported, and that turned out to be too coarse, because the two failure cases need completely different responses from whoever is reading.
+
+| Verdict | What it means | What you would do |
+|---|---|---|
+| `SUPPORTED` | all of it is there in the source | nothing |
+| `PARTIAL` | part is backed up, the rest is not mentioned | soften or cut the extra bit |
+| `UNSUPPORTED` | nothing in the sources is about this | find a source or delete it |
+| `CONTRADICTED` | a passage says something incompatible | fix it, your source disagrees |
+
+`UNSUPPORTED` means go find a citation. `CONTRADICTED` means you wrote something false. Collapsing those into one bucket makes the output much less useful.
+
+## The test set I had to write myself
+
+Unit tests tell you the code runs. They do not tell you whether the judging is any good. There is no small public dataset for this shaped the way I needed, so I wrote one.
+
+It is 68 claims across 8 source corpora, each labelled by hand with one of the four verdicts. The corpora are documents I wrote myself covering deliberately different ground: a quarterly earnings report, a lease agreement, a clinical trial summary, a battery research paper, framework documentation, a city transit plan, a football match report, and a Mars rover mission page. The variety is on purpose, because a judge tuned on financial text alone would have looked far better than it deserved.
+
+Two things I would want to know if I were reading this. The documents are synthetic, written by me, so they are cleaner than real PDFs. And because I wrote both the sources and the claims, the set measures what I thought to test. I wrote every source document first and the claims afterwards, which stops you unconsciously writing claims that are easy to get right, but it does not turn a hand-built set into a benchmark.
+
+The loader also reads external JSONL in the same format, so it can run against something bigger.
+
+## How I checked whether it works
 
 ```bash
-llmfeeder eval                     # reproduces the numbers below
+llmfeeder eval        # reproduces every number below
 ```
 
-**68 labelled claims across 8 source corpora, offline judge, no API key:**
+68 labelled claims, offline judge, no API key needed.
 
-| Verdict | Precision | Recall | F1 | n |
+| Verdict | Precision | Recall | F1 | Claims |
 |---|---|---|---|---|
-| supported | 0.89 | 0.97 | 0.93 | 32 |
-| contradicted | 0.94 | 0.75 | 0.83 | 20 |
-| unsupported | 0.73 | 1.00 | 0.84 | 8 |
-| partial | 0.67 | 0.50 | 0.57 | 8 |
+| supported | 31/35 = 0.89 | 31/32 = 0.97 | 0.93 | 32 |
+| contradicted | 15/16 = 0.94 | 15/20 = 0.75 | 0.83 | 20 |
+| unsupported | 8/11 = 0.73 | 8/8 = 1.00 | 0.84 | 8 |
+| partial | 4/6 = 0.67 | 4/8 = 0.50 | 0.57 | 8 |
 
-If you collapse it down to the question a user actually cares about ("should I go and check this claim?"):
+Collapsed down to the question a user actually has, which is "should I go and check this claim":
 
-| | |
+| Measure | Value |
 |---|---|
+| problems caught | 32 of 36 |
+| false alarms | 1 of 32 clean claims |
 | precision | 0.97 |
 | recall | 0.89 |
 | F1 | 0.93 |
-| accuracy (4 classes) | 0.85 |
+| overall accuracy | 58 of 68 = 0.85 |
 | macro F1 | 0.79 |
 
-So one false alarm out of 68, and it misses 4 of the 36 claims that had something wrong with them.
+What those numbers do not prove. The set is 68 claims I wrote, so it measures the failure modes I thought of, and there are certainly ones I did not. The `partial` row rests on 8 examples, so its 0.57 moves a long way if a single claim flips, and I would not read anything into that figure on its own. The one result I do lean on is the false alarm count: 1 in 32 means the tool is not crying wolf, which is the thing that would make me stop using it.
 
-I also put these thresholds into the test suite, so if I change the scoring later and it gets worse, CI fails instead of quietly letting it slide.
+I put these thresholds into the test suite, so if I change the scoring later and it gets worse, CI goes red instead of quietly letting it slide.
 
-## What it gets wrong
+## Where it still gets things wrong
 
-I think this section is more useful than a bigger headline number, so here are all 10 cases it disagreed with my labels on:
+The tool disagreed with my labels on 10 of the 68. I find these more useful than the headline number, so here they all are.
 
-1. **Swapped names or places** (3 cases). "data centres in Dublin and Tokyo" against a source that says "Dublin and Singapore" comes back as supported. Every individual word is in the passage, and my offline judge just counts words, so it has no idea one got swapped.
-2. **Opposites** (2 cases). "Background tasks run before the response is sent" against "after the response has been sent". No number disagrees and no negation word appears, so nothing trips.
-3. **Relationships that aren't actually stated** (2 cases). If a claim says A happened because of B, and the source mentions A and mentions B but never connects them, the word overlap is satisfied anyway.
-4. **Synonyms** (1 case). "Okafor scored" against "Okafor took the lead with a header". My stemmer doesn't bridge that gap.
+Swapped names, places or facts, 3 cases. "The rover is powered by solar panels" against a source saying it is powered by a radioisotope thermoelectric generator comes back supported. Every content word in the claim appears in the passage, and the offline judge counts words, so it has no idea the important one got swapped. Same story for data centres in "Dublin and Tokyo" against a source saying "Dublin and Singapore".
 
-The other 2 are `partial` borderline calls, which honestly are hard for me to label consistently myself.
+Opposites, 2 cases. "Background tasks run before the response has been sent" against "Background tasks run after the response has been sent". No number disagrees and no negation word appears, so nothing trips.
 
-Groups 1 and 2 are the main reason the optional LLM judge exists.
+Relationships that are never actually stated, 2 cases. If a claim says A happened because of B, and the source mentions A and mentions B but never connects them, the word overlap is satisfied anyway.
 
-## Optional LLM judge
+Synonyms, 1 case. "Okafor scored" against "Okafor took the lead with a header". My stemmer does not bridge that.
 
-Off by default. It only turns on if it finds an API key on your machine.
+The remaining 2 are `partial` borderline calls that I find hard to label consistently myself, which is its own kind of finding about the class.
 
-The thing I was most careful about here: the model doesn't get to invent citations. It only sees the same candidate passages the offline judge saw, and whatever it quotes gets looked up in that passage afterwards. If I can't find its quote in the text, I throw the citation away and downgrade the claim. So a made-up citation can't get through, which felt important for a tool whose whole job is checking things.
+The first two groups are the whole reason the optional LLM judge exists. They also point at the real boundary of this design: the offline judge is word overlap plus arithmetic, it is English only because the stemmer and stopword list are English, and it judges each claim against a single best passage, so a claim that is only true once you combine two documents shows up as partial.
+
+## Three things I got wrong
+
+Four bugs were worth writing down. Here are the three I learned the most from.
+
+### A number the source never mentioned was being called a contradiction
+
+A claim in the transit corpus said the plan adds "14 kilometres of dedicated bus lanes and six new bus stations". The source gives the 14 kilometres and says nothing at all about station counts. My first version marked that contradicted.
+
+That is wrong, and wrong in the direction that matters. The source is silent, not disagreeing, and telling someone their sentence is contradicted when nothing contradicts it sends them off to fix something that may well be correct. Over-flagging is how a checking tool loses trust.
+
+The fix was deciding when two numbers are even talking about the same thing. A figure now only counts as contradicted if the passage offers a comparable number, which I work out by checking whether the two numbers share a nearby content word. Six stations and 14 kilometres share nothing, so the six is recorded as unstated and pulls the score down without claiming a conflict. That is why `numbers_agree` returns two lists rather than one.
+
+### A feature had been broken for weeks and CI never noticed
+
+The MCP server lets an agent check its own output. Its dependency was declared as `mcp>=1.2`, which resolves to whatever is newest. `mcp` 2.0 removed the `mcp.server.fastmcp` module the server imports, so anyone doing a fresh install and running `llmfeeder mcp` got an ImportError. My own environment had 2.0.0 sitting in it.
+
+CI was green through all of it, because no test imported that module. Every test passed, lint passed, types passed, and an advertised feature was dead. Green CI only tells you about the code your tests actually reach.
+
+I pinned the extra to `mcp>=1.2,<2` and wrote `tests/test_mcp_server.py`. The test taught me something too. My first version guarded it with `pytest.importorskip("mcp.server.fastmcp")`, and when I deliberately reinstalled the broken version to check, the test skipped rather than failed, which would have made it decorative. Guarding on the top level `mcp` package instead means a missing extra skips cleanly while a broken one fails loudly. I checked all three cases: correct version, broken version, and extra not installed.
+
+### The same code cited different characters on different runs
+
+I ran the evaluation twice and diffed the output. Same verdicts, same scores, but one claim in the lease corpus cited `chars 175-254` in one run and `chars 192-254` in the other.
+
+Both ranges cover exactly the same 7 matched terms. The alignment step scores a candidate range by summing the IDF weight of the terms it covers, and it sums them by iterating a Python set. Set iteration order for strings varies between processes, and floating point addition is not associative, so those same 7 weights add up to `9.187665203514742` in some orders and `9.18766520351474` in others. When they tie exactly the tie-break picks the shorter span, which is the answer I want. When the noise makes the longer range come out fractionally ahead, it wins on a difference in the last bits of a float.
+
+I left it in. The verdict and the score are identical either way, and the two spans sit inside the same sentence, so the effect is that a highlight starts 17 characters earlier. The fix is to sort the terms before summing so the order stops being luck, and that is a one line change I would make before ever depending on the exact offsets. Working out why two identical runs disagreed was worth more to me than the fix.
+
+## The optional LLM judge
+
+Off by default. It only activates if it finds an API key on your machine, and it prints a notice before sending anything so you know when your source text is about to leave the machine.
+
+The part I was careful about is that the model does not get to invent citations. It only sees the same candidate passages the offline judge saw, and whatever it quotes gets looked up in that passage afterwards. If the quote is not there, the citation is thrown away and the claim is downgraded. A made up citation cannot reach the output, which felt like the minimum bar for a tool whose entire job is checking things.
 
 ```bash
 cp .env.example .env        # add OPENAI_API_KEY or ANTHROPIC_API_KEY
 llmfeeder check answer.md -s ./docs --judge llm --model gpt-4o-mini
 ```
 
-It also prints a notice before it sends anything, so you know when your source text is about to leave your machine.
-
-No SDK needed. I wrote a small adapter over `urllib` that talks to OpenAI-compatible endpoints (OpenAI, Groq, Together, OpenRouter, local Ollama) and to Anthropic. It's about a hundred lines and it means the base install stays tiny.
+No SDK required. It is about a hundred lines over `urllib` covering OpenAI-compatible endpoints (OpenAI, Groq, Together, OpenRouter, local Ollama) and Anthropic, which keeps the base install at two dependencies.
 
 ## MCP server
 
-This lets an AI agent check its own output before showing it to you.
+This lets an AI agent check its own output before showing it to you. The case I had in mind is self-correction partway through a task: the model writes a summary, calls the tool, sees one sentence is unsupported, and rewrites that sentence instead of shipping it.
 
 ```bash
 pip install -e ".[mcp]"
@@ -190,7 +196,7 @@ llmfeeder mcp --sources ./docs
 }
 ```
 
-Two tools: `verify_against_sources` for a folder on disk, and `verify_against_text` for passages already in the conversation. Both return the score, the per-claim verdicts, and a `needs_attention` list sorted worst first, so the model can go and fix the specific sentence that failed.
+Two tools. `verify_against_sources` reads a folder on disk, `verify_against_text` takes passages already in the conversation. Both return the score, the per-claim verdicts, and a `needs_attention` list sorted worst first, so the model can go and fix the specific sentence that failed.
 
 ## Using it from Python
 
@@ -199,7 +205,7 @@ from llmfeeder import check, write_report
 
 result = check("Revenue grew 34% to $2.1B.", ["./sources"])
 
-print(result.faithfulness)          # 0.91
+print(result.faithfulness)
 print(result.counts())              # {'supported': 4, 'partial': 0, ...}
 
 for claim in result.problems():     # worst first
@@ -211,7 +217,82 @@ for claim in result.problems():     # worst first
 write_report(result, "out.html")
 ```
 
-One rule I stuck to everywhere: a `SourceSpan` is always a real character range into the loaded document, so `document.text[span.start:span.end] == span.text` is always true. That's what makes the highlighting reliable, and there's a test for it.
+One rule I held to everywhere: a `SourceSpan` is always a real character range into the loaded document, so `document.text[span.start:span.end] == span.text` always holds. That invariant is what makes the highlighting trustworthy, and there is a test for it.
+
+## Installing and running it
+
+```bash
+pip install git+https://github.com/adwitiyashukla/LLMFeeder.git
+```
+
+Or clone it, which is easier if you want to read the code:
+
+```bash
+git clone https://github.com/adwitiyashukla/LLMFeeder.git
+cd LLMFeeder
+pip install -e ".[all]"
+```
+
+Python 3.11 or newer. The command is `llmfeeder`. Optional extras are `pdf` for PDF sources, `mcp` for the server, and `all` for both. Without them it still reads txt, markdown, HTML and JSON, and the only dependencies are `typer` and `rich`.
+
+```bash
+llmfeeder demo --open                     # runs the built-in example and opens the report
+
+llmfeeder check answer.md --sources ./docs
+llmfeeder check answer.md -s ./docs -s ./notes.pdf --report out.html --open
+echo "Revenue grew 34%." | llmfeeder check - --sources ./docs
+llmfeeder check answer.md -s ./docs --json results.json --quiet
+```
+
+It also works as a build gate:
+
+```bash
+llmfeeder check generated-summary.md --sources ./source-of-truth --fail-under 0.9
+```
+
+That exits non-zero if the score is too low, so a docs build can refuse to publish a page whose claims have drifted from the source material.
+
+## What is in the repo
+
+```
+src/llmfeeder/
+  cli.py            the llmfeeder command
+  corpus.py         loading and normalising source files
+  segment.py        splitting text into individual claims
+  retrieve.py       sentence index and candidate windows
+  textutil.py       tokenising, stemming, number parsing
+  judge/
+    lexical.py      the offline judge
+    llm.py          the optional model judge
+  report.py         the self-contained HTML report
+  evaluation.py     the scoring harness and metrics
+  models.py         the data types
+  mcp_server.py     the two MCP tools
+  data/eval.json    68 labelled claims across 8 corpora
+tests/              108 tests
+docs/               the committed example report, served by GitHub Pages
+```
+
+## Tests
+
+```bash
+pip install pytest pytest-cov ruff mypy
+ruff check src tests
+mypy
+pytest
+```
+
+| File | Tests | What it pins down |
+|---|---|---|
+| `test_textutil.py` | 31 | number parsing, units, spelled-out numbers, negation |
+| `test_report_eval.py` | 25 | HTML report, metric arithmetic, the quality floors |
+| `test_corpus_segment.py` | 23 | sentence splitting, the file loaders |
+| `test_engine.py` | 23 | all four verdicts end to end, citation offsets |
+| `test_mcp_server.py` | 6 | the MCP tools still build and expose their schemas |
+
+The ones I would actually read are the quality floors in `test_report_eval.py`, which fail the build if detection recall drops below 0.80 or precision below 0.90, and the span test in `test_engine.py`, which checks every citation offset resolves back to the exact text it claims to be.
+
+CI runs lint, `mypy --strict`, the tests and the evaluation harness on Python 3.11 and 3.12.
 
 ## Commands
 
@@ -222,34 +303,15 @@ One rule I stuck to everywhere: a `SourceSpan` is always a real character range 
 | `llmfeeder demo` | run the built-in example |
 | `llmfeeder mcp` | start the MCP server |
 
-Handy flags for `check`: `--report out.html`, `--json out.json`, `--open`, `--judge lexical|llm|auto`, `--threshold`, `--fail-under`, `--top-k`, `--verbose`, `--quiet`.
+Flags for `check`: `--report out.html`, `--json out.json`, `--open`, `--judge lexical|llm|auto`, `--threshold`, `--fail-under`, `--top-k`, `--verbose`, `--quiet`.
 
 ## File types it reads
 
-With no extra dependencies: `.txt`, `.md`, `.html`, `.json`, `.jsonl`, `.csv`, `.yaml` and most plain source files. HTML gets stripped down to readable text using the standard library, and JSON gets flattened into `path: value` lines so text hidden inside it is still findable. PDFs need the `pdf` extra and carry page numbers into the citations.
+With no extra dependencies: `.txt`, `.md`, `.html`, `.json`, `.jsonl`, `.csv`, `.yaml` and most plain source files. HTML is stripped to readable text with the standard library, and JSON is flattened into `path: value` lines so text buried inside it is still findable. PDFs need the `pdf` extra and carry page numbers through into the citations.
 
-## Limitations
+## Stack
 
-Being upfront about these:
-
-- **The offline judge just counts words.** It can't see synonyms, swapped names or implied relationships. See the failure section above. The LLM judge handles those, but the offline one is the free, reproducible baseline.
-- **My eval set is hand-made.** It's 68 claims I wrote specifically to cover the different failure modes, not a standard benchmark. That makes it useful for catching regressions, but it isn't a leaderboard score and I don't want to pretend it is. The loader takes external JSONL in the same format if you want to run it on something bigger.
-- **English only.** The stemmer, stopword list and negation words are all English.
-- **One document at a time.** Each claim gets judged against the single best passage. A claim that's only true if you combine two documents will show up as partial.
-
-## Running it locally
-
-```bash
-git clone https://github.com/adwitiyashukla/LLMFeeder.git
-cd LLMFeeder
-pip install -e ".[all]"
-pip install pytest pytest-cov ruff mypy
-
-ruff check src tests && mypy && pytest
-llmfeeder eval
-```
-
-CI runs lint, `mypy --strict`, the tests and the eval harness on Python 3.11 and 3.12.
+Python 3.11, `typer` and `rich` for the CLI, `pdfplumber` and `mcp` as optional extras, `pytest` and `ruff` and `mypy` for the checks. No machine learning dependencies in the default install.
 
 ## Author
 
