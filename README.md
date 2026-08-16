@@ -7,19 +7,6 @@ Checks whether AI-generated text is actually supported by your source documents,
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Live demo](https://img.shields.io/badge/demo-live%20report-4c8dff.svg)](https://adwitiyashukla.github.io/LLMFeeder/example-report.html)
 
-## Why I did not use embeddings
-
-The obvious way to build this is to embed the claim, embed the source passage, and call anything above a similarity threshold supported. It demos well. I got about a day into it before I tried these two sentences:
-
-> Free cash flow was 410 million dollars.
-> Free cash flow was 510 million dollars.
-
-As strings they are nearly identical, and their embeddings are nearly identical too. Any threshold you pick says the second one is fine. It isn't fine, and a wrong number is probably the most common way an AI summary goes bad. The one error I most wanted to catch was the one similarity is worst at seeing.
-
-So the tool does not compare text at all when there is a number involved. It parses numbers into actual values and compares those. `$2.1B`, `2.1 billion` and `2,100,000,000` all become the same value. `34%` and `34 percent` keep the same unit. `three participants` gets compared against `two participants`. Years and ordinals get ignored, because "in 2021" and "the 12th minute" locate a statement rather than measure anything.
-
-That decision is the reason the rest of the project looks the way it does.
-
 ## What it looks like
 
 ```
@@ -80,16 +67,6 @@ I started with supported and not supported, and that turned out to be too coarse
 
 `UNSUPPORTED` means go find a citation. `CONTRADICTED` means you wrote something false. Collapsing those into one bucket makes the output much less useful.
 
-## The test set I had to write myself
-
-Unit tests tell you the code runs. They do not tell you whether the judging is any good. There is no small public dataset for this shaped the way I needed, so I wrote one.
-
-It is 68 claims across 8 source corpora, each labelled by hand with one of the four verdicts. The corpora are documents I wrote myself covering deliberately different ground: a quarterly earnings report, a lease agreement, a clinical trial summary, a battery research paper, framework documentation, a city transit plan, a football match report, and a Mars rover mission page. The variety is on purpose, because a judge tuned on financial text alone would have looked far better than it deserved.
-
-Two things I would want to know if I were reading this. The documents are synthetic, written by me, so they are cleaner than real PDFs. And because I wrote both the sources and the claims, the set measures what I thought to test. I wrote every source document first and the claims afterwards, which stops you unconsciously writing claims that are easy to get right, but it does not turn a hand-built set into a benchmark.
-
-The loader also reads external JSONL in the same format, so it can run against something bigger.
-
 ## How I checked whether it works
 
 ```bash
@@ -136,34 +113,6 @@ Synonyms, 1 case. "Okafor scored" against "Okafor took the lead with a header". 
 The remaining 2 are `partial` borderline calls that I find hard to label consistently myself, which is its own kind of finding about the class.
 
 The first two groups are the whole reason the optional LLM judge exists. They also point at the real boundary of this design: the offline judge is word overlap plus arithmetic, it is English only because the stemmer and stopword list are English, and it judges each claim against a single best passage, so a claim that is only true once you combine two documents shows up as partial.
-
-## Three things I got wrong
-
-Four bugs were worth writing down. Here are the three I learned the most from.
-
-### A number the source never mentioned was being called a contradiction
-
-A claim in the transit corpus said the plan adds "14 kilometres of dedicated bus lanes and six new bus stations". The source gives the 14 kilometres and says nothing at all about station counts. My first version marked that contradicted.
-
-That is wrong, and wrong in the direction that matters. The source is silent, not disagreeing, and telling someone their sentence is contradicted when nothing contradicts it sends them off to fix something that may well be correct. Over-flagging is how a checking tool loses trust.
-
-The fix was deciding when two numbers are even talking about the same thing. A figure now only counts as contradicted if the passage offers a comparable number, which I work out by checking whether the two numbers share a nearby content word. Six stations and 14 kilometres share nothing, so the six is recorded as unstated and pulls the score down without claiming a conflict. That is why `numbers_agree` returns two lists rather than one.
-
-### A feature had been broken for weeks and CI never noticed
-
-The MCP server lets an agent check its own output. Its dependency was declared as `mcp>=1.2`, which resolves to whatever is newest. `mcp` 2.0 removed the `mcp.server.fastmcp` module the server imports, so anyone doing a fresh install and running `llmfeeder mcp` got an ImportError. My own environment had 2.0.0 sitting in it.
-
-CI was green through all of it, because no test imported that module. Every test passed, lint passed, types passed, and an advertised feature was dead. Green CI only tells you about the code your tests actually reach.
-
-I pinned the extra to `mcp>=1.2,<2` and wrote `tests/test_mcp_server.py`. The test taught me something too. My first version guarded it with `pytest.importorskip("mcp.server.fastmcp")`, and when I deliberately reinstalled the broken version to check, the test skipped rather than failed, which would have made it decorative. Guarding on the top level `mcp` package instead means a missing extra skips cleanly while a broken one fails loudly. I checked all three cases: correct version, broken version, and extra not installed.
-
-### The same code cited different characters on different runs
-
-I ran the evaluation twice and diffed the output. Same verdicts, same scores, but one claim in the lease corpus cited `chars 175-254` in one run and `chars 192-254` in the other.
-
-Both ranges cover exactly the same 7 matched terms. The alignment step scores a candidate range by summing the IDF weight of the terms it covers, and it sums them by iterating a Python set. Set iteration order for strings varies between processes, and floating point addition is not associative, so those same 7 weights add up to `9.187665203514742` in some orders and `9.18766520351474` in others. When they tie exactly the tie-break picks the shorter span, which is the answer I want. When the noise makes the longer range come out fractionally ahead, it wins on a difference in the last bits of a float.
-
-I left it in. The verdict and the score are identical either way, and the two spans sit inside the same sentence, so the effect is that a highlight starts 17 characters earlier. The fix is to sort the terms before summing so the order stops being luck, and that is a one line change I would make before ever depending on the exact offsets. Working out why two identical runs disagreed was worth more to me than the fix.
 
 ## The optional LLM judge
 
@@ -273,27 +222,6 @@ tests/              108 tests
 docs/               the committed example report, served by GitHub Pages
 ```
 
-## Tests
-
-```bash
-pip install pytest pytest-cov ruff mypy
-ruff check src tests
-mypy
-pytest
-```
-
-| File | Tests | What it pins down |
-|---|---|---|
-| `test_textutil.py` | 31 | number parsing, units, spelled-out numbers, negation |
-| `test_report_eval.py` | 25 | HTML report, metric arithmetic, the quality floors |
-| `test_corpus_segment.py` | 23 | sentence splitting, the file loaders |
-| `test_engine.py` | 23 | all four verdicts end to end, citation offsets |
-| `test_mcp_server.py` | 6 | the MCP tools still build and expose their schemas |
-
-The ones I would actually read are the quality floors in `test_report_eval.py`, which fail the build if detection recall drops below 0.80 or precision below 0.90, and the span test in `test_engine.py`, which checks every citation offset resolves back to the exact text it claims to be.
-
-CI runs lint, `mypy --strict`, the tests and the evaluation harness on Python 3.11 and 3.12.
-
 ## Commands
 
 | Command | What it does |
@@ -308,10 +236,6 @@ Flags for `check`: `--report out.html`, `--json out.json`, `--open`, `--judge le
 ## File types it reads
 
 With no extra dependencies: `.txt`, `.md`, `.html`, `.json`, `.jsonl`, `.csv`, `.yaml` and most plain source files. HTML is stripped to readable text with the standard library, and JSON is flattened into `path: value` lines so text buried inside it is still findable. PDFs need the `pdf` extra and carry page numbers through into the citations.
-
-## Stack
-
-Python 3.11, `typer` and `rich` for the CLI, `pdfplumber` and `mcp` as optional extras, `pytest` and `ruff` and `mypy` for the checks. No machine learning dependencies in the default install.
 
 ## Author
 
